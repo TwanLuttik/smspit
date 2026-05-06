@@ -1,0 +1,16 @@
+{
+  "name": "smspit",
+  "version": "1.0.0",
+  "description": "Mock Twilio SMS server with web UI for developers",
+  "private": true,
+  "workspaces": [
+    "server",
+    "web"
+  ],
+  "scripts": {
+    "dev": "npm run dev --workspace=server",
+    "dev:web": "npm run dev --workspace=web",
+    "build": "npm run build --workspace=server && npm run build --workspace=web",
+    "start": "npm run start --workspace=server"
+  }
+}
