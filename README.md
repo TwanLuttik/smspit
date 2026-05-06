@@ -43,7 +43,7 @@ Access the web UI at http://localhost:4010/web
 
 ### Configure Twilio SDK
 
-Point your Twilio client to SMSPit instead of the real Twilio API:
+Point your Twilio client to SMSPit instead of the real Twilio API. The Twilio SDK supports a `host` and `port` option directly in the constructor — no manual `baseUrl` overrides needed:
 
 ```javascript
 import twilio from 'twilio';
