@@ -92,7 +92,7 @@ export function MessageList({
       <div
         style={{
           padding: '16px',
-          borderBottom: '1px solid #e5e7eb',
+          borderBottom: '1px solid var(--border-color)',
         }}
       >
         <input
@@ -102,11 +102,13 @@ export function MessageList({
           onChange={(e) => setSearch(e.target.value)}
           style={{
             padding: '8px 12px',
-            border: '1px solid #d1d5db',
+            border: '1px solid var(--input-border)',
             borderRadius: '8px',
             fontSize: '14px',
             width: '100%',
             outline: 'none',
+            backgroundColor: 'var(--bg-primary)',
+            color: 'var(--text-primary)',
           }}
         />
       </div>
@@ -119,7 +121,7 @@ export function MessageList({
               alignItems: 'center',
               justifyContent: 'center',
               padding: '40px',
-              color: '#6b7280',
+              color: 'var(--text-secondary)',
             }}
           >
             Loading...
@@ -134,7 +136,7 @@ export function MessageList({
               alignItems: 'center',
               justifyContent: 'center',
               padding: '40px',
-              color: '#6b7280',
+              color: 'var(--text-secondary)',
             }}
           >
             <p style={{ margin: 0 }}>No messages yet</p>
@@ -150,9 +152,9 @@ export function MessageList({
             onClick={() => onSelectConversation(conv.key)}
             style={{
               padding: '12px 16px',
-              borderBottom: '1px solid #e5e7eb',
+              borderBottom: '1px solid var(--border-color)',
               cursor: 'pointer',
-              backgroundColor: selectedConversationKey === conv.key ? '#e8f5e9' : 'transparent',
+              backgroundColor: selectedConversationKey === conv.key ? 'var(--selected-bg)' : 'transparent',
             }}
           >
             <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px' }}>
@@ -161,7 +163,7 @@ export function MessageList({
                   width: '48px',
                   height: '48px',
                   borderRadius: '24px',
-                  backgroundColor: conv.direction === 'sent' ? '#10b981' : '#3b82f6',
+                  backgroundColor: conv.direction === 'sent' ? 'var(--accent-sent)' : 'var(--accent-received)',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
@@ -182,10 +184,10 @@ export function MessageList({
                     marginBottom: '4px',
                   }}
                 >
-                  <span style={{ fontSize: '15px', fontWeight: 600, color: '#111827' }}>
+                  <span style={{ fontSize: '15px', fontWeight: 600, color: 'var(--text-primary)' }}>
                     {formatPhoneNumber(conv.phoneNumber)}
                   </span>
-                  <span style={{ fontSize: '12px', color: '#9ca3af' }}>
+                  <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
                     {formatTime(conv.lastMessage.date_created)}
                   </span>
                 </div>
@@ -201,7 +203,7 @@ export function MessageList({
                     style={{
                       fontSize: '12px',
                       fontWeight: 500,
-                      color: conv.direction === 'sent' ? '#10b981' : '#3b82f6',
+                      color: conv.direction === 'sent' ? 'var(--accent-sent)' : 'var(--accent-received)',
                     }}
                   >
                     {conv.direction === 'sent' ? '↓ Sent' : '↑ Received'}
@@ -210,8 +212,8 @@ export function MessageList({
                     <span
                       style={{
                         fontSize: '11px',
-                        color: '#6b7280',
-                        backgroundColor: '#f3f4f6',
+                        color: 'var(--text-secondary)',
+                        backgroundColor: 'var(--bg-tertiary)',
                         padding: '2px 6px',
                         borderRadius: '10px',
                       }}
@@ -223,7 +225,7 @@ export function MessageList({
                 <div
                   style={{
                     fontSize: '14px',
-                    color: '#6b7280',
+                    color: 'var(--text-secondary)',
                     overflow: 'hidden',
                     textOverflow: 'ellipsis',
                     whiteSpace: 'nowrap',

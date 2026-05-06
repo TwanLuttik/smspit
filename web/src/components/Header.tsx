@@ -1,12 +1,17 @@
+import { useTheme } from '../hooks/useTheme';
+
 export function Header() {
+  const { theme, toggleTheme } = useTheme();
+
   return (
     <header
       style={{
         padding: '16px 24px',
-        borderBottom: '1px solid #e5e7eb',
+        borderBottom: '1px solid var(--border-color)',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
+        backgroundColor: 'var(--bg-primary)',
       }}
     >
       <div>
@@ -15,7 +20,7 @@ export function Header() {
             margin: 0,
             fontSize: '20px',
             fontWeight: 600,
-            color: '#111827',
+            color: 'var(--text-primary)',
           }}
         >
           SMSPit
@@ -24,22 +29,39 @@ export function Header() {
           style={{
             margin: '4px 0 0 0',
             fontSize: '14px',
-            color: '#6b7280',
+            color: 'var(--text-secondary)',
           }}
         >
           Twilio SMS Mock Server
         </p>
       </div>
-      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-        <span
+      <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+        <button
+          onClick={toggleTheme}
           style={{
-            width: '8px',
-            height: '8px',
-            borderRadius: '50%',
-            backgroundColor: '#10b981',
+            padding: '6px 12px',
+            fontSize: '14px',
+            border: '1px solid var(--input-border)',
+            borderRadius: '6px',
+            backgroundColor: 'var(--bg-secondary)',
+            color: 'var(--text-primary)',
+            cursor: 'pointer',
+            transition: 'background-color 0.15s',
           }}
-        />
-        <span style={{ fontSize: '14px', color: '#6b7280' }}>Connected</span>
+        >
+          {theme === 'light' ? '🌙' : '☀️'}
+        </button>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <span
+            style={{
+              width: '8px',
+              height: '8px',
+              borderRadius: '50%',
+              backgroundColor: '#10b981',
+            }}
+          />
+          <span style={{ fontSize: '14px', color: 'var(--text-secondary)' }}>Connected</span>
+        </div>
       </div>
     </header>
   );

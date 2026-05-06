@@ -18,13 +18,18 @@ export function usePolling(pollInterval = 1000): UsePollingResult {
   const [lastPoll, setLastPoll] = useState<Date | null>(null);
   const lastPollRef = useRef<Date | null>(null);
   const fetchingRef = useRef(false);
+  const messagesRef = useRef<TwilioMessage[]>([]);
+
+  messagesRef.current = messages;
 
   const fetchMessages = useCallback(async (isPolling = false) => {
     if (fetchingRef.current) return;
     fetchingRef.current = true;
 
-    setIsLoading(true);
-    setError(null);
+    if (!isPolling) {
+      setIsLoading(true);
+      setError(null);
+    }
 
     try {
       const url = lastPollRef.current && isPolling
@@ -37,12 +42,11 @@ export function usePolling(pollInterval = 1000): UsePollingResult {
       const data = await response.json();
 
       if (isPolling && lastPollRef.current) {
-        setMessages((prev) => {
-          const existingSids = new Set(prev.map((m) => m.sid));
-          const newMessages = (data.messages || []).filter((m: TwilioMessage) => !existingSids.has(m.sid));
-          if (newMessages.length === 0) return prev;
-          return [...prev, ...newMessages];
-        });
+        const existingSids = new Set(messagesRef.current.map((m) => m.sid));
+        const newMessages = (data.messages || []).filter((m: TwilioMessage) => !existingSids.has(m.sid));
+        if (newMessages.length > 0) {
+          setMessages((prev) => [...prev, ...newMessages]);
+        }
       } else {
         setMessages(data.messages || []);
       }
@@ -52,7 +56,7 @@ export function usePolling(pollInterval = 1000): UsePollingResult {
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unknown error');
     } finally {
-      setIsLoading(false);
+      if (!isPolling) setIsLoading(false);
       fetchingRef.current = false;
     }
   }, []);

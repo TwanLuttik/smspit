@@ -46,7 +46,7 @@ function parseLinks(text: string) {
           href={part}
           target="_blank"
           rel="noopener noreferrer"
-          style={{ color: '#3b82f6', textDecoration: 'underline' }}
+          style={{ color: 'var(--accent-received)', textDecoration: 'underline' }}
         >
           {part}
         </a>
@@ -65,8 +65,8 @@ export function MessageDetail({ messages, phoneNumber, onClose }: MessageDetailP
           alignItems: 'center',
           justifyContent: 'center',
           height: '100%',
-          color: '#6b7280',
-          backgroundColor: '#f3f4f6',
+          color: 'var(--text-secondary)',
+          backgroundColor: 'var(--bg-tertiary)',
         }}
       >
         <p>Select a conversation to view messages</p>
@@ -82,17 +82,17 @@ export function MessageDetail({ messages, phoneNumber, onClose }: MessageDetailP
         display: 'flex',
         flexDirection: 'column',
         height: '100%',
-        backgroundColor: '#f3f4f6',
+        backgroundColor: 'var(--bg-tertiary)',
       }}
     >
       <div
         style={{
           padding: '16px',
-          borderBottom: '1px solid #e5e7eb',
+          borderBottom: '1px solid var(--border-color)',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
-          backgroundColor: '#ffffff',
+          backgroundColor: 'var(--bg-primary)',
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
@@ -101,7 +101,7 @@ export function MessageDetail({ messages, phoneNumber, onClose }: MessageDetailP
               width: '40px',
               height: '40px',
               borderRadius: '20px',
-              backgroundColor: isSent ? '#10b981' : '#3b82f6',
+              backgroundColor: isSent ? 'var(--accent-sent)' : 'var(--accent-received)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
@@ -113,10 +113,10 @@ export function MessageDetail({ messages, phoneNumber, onClose }: MessageDetailP
             {phoneNumber.slice(-4)}
           </div>
           <div>
-            <h2 style={{ margin: 0, fontSize: '16px', fontWeight: 600 }}>
+            <h2 style={{ margin: 0, fontSize: '16px', fontWeight: 600, color: 'var(--text-primary)' }}>
               {formatPhoneNumber(phoneNumber)}
             </h2>
-            <span style={{ fontSize: '12px', color: isSent ? '#10b981' : '#3b82f6' }}>
+            <span style={{ fontSize: '12px', color: isSent ? 'var(--accent-sent)' : 'var(--accent-received)' }}>
               {isSent ? 'Sent' : 'Received'} · {messages.length} messages
             </span>
           </div>
@@ -129,7 +129,7 @@ export function MessageDetail({ messages, phoneNumber, onClose }: MessageDetailP
             background: 'none',
             cursor: 'pointer',
             fontSize: '14px',
-            color: '#6b7280',
+            color: 'var(--text-secondary)',
           }}
         >
           ✕
@@ -153,17 +153,17 @@ export function MessageDetail({ messages, phoneNumber, onClose }: MessageDetailP
                   style={{
                     maxWidth: '70%',
                     padding: '12px 16px',
-                    backgroundColor: isMsgSent ? '#dcfce7' : '#ffffff',
+                    backgroundColor: isMsgSent ? 'var(--accent-sent)' : 'var(--bg-primary)',
+                    color: isMsgSent ? 'white' : 'var(--text-primary)',
                     borderRadius: '16px',
                     borderTopRightRadius: isMsgSent ? '4px' : '16px',
                     borderTopLeftRadius: isMsgSent ? '16px' : '4px',
-                    boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
+                    boxShadow: '0 1px 2px rgba(0,0,0,0.1)',
                   }}
                 >
                   <div
                     style={{
                       fontSize: '15px',
-                      color: '#111827',
                       whiteSpace: 'pre-wrap',
                       wordBreak: 'break-word',
                       lineHeight: '1.4',
@@ -183,7 +183,7 @@ export function MessageDetail({ messages, phoneNumber, onClose }: MessageDetailP
                   }}
                 >
                   <StatusBadge status={msg.status} />
-                  <span style={{ fontSize: '11px', color: '#9ca3af' }}>
+                  <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
                     {formatDate(msg.date_created)}
                   </span>
                 </div>
