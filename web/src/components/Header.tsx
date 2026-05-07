@@ -1,4 +1,5 @@
 import { useTheme } from '../hooks/useTheme';
+import { Moon, Sun } from 'lucide-react';
 
 export function Header() {
   const { theme, toggleTheme } = useTheme();
@@ -39,17 +40,19 @@ export function Header() {
         <button
           onClick={toggleTheme}
           style={{
-            padding: '6px 12px',
-            fontSize: '14px',
+            padding: '6px',
             border: '1px solid var(--input-border)',
             borderRadius: '6px',
             backgroundColor: 'var(--bg-secondary)',
             color: 'var(--text-primary)',
             cursor: 'pointer',
             transition: 'background-color 0.15s',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
           }}
         >
-          {theme === 'light' ? '🌙' : '☀️'}
+          {theme === 'light' ? <Moon size={18} /> : <Sun size={18} />}
         </button>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           <span

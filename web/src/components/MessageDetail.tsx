@@ -153,7 +153,7 @@ export function MessageDetail({ messages, phoneNumber, onClose }: MessageDetailP
                   style={{
                     maxWidth: '70%',
                     padding: '12px 16px',
-                    backgroundColor: isMsgSent ? 'var(--accent-sent)' : 'var(--bg-primary)',
+                    backgroundColor: isMsgSent ? 'var(--accent-sent)' : 'var(--accent-received)',
                     color: isMsgSent ? 'white' : 'var(--text-primary)',
                     borderRadius: '16px',
                     borderTopRightRadius: isMsgSent ? '4px' : '16px',

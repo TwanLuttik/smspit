@@ -1,3 +1,5 @@
+@import "tailwindcss";
+
 :root {
   --bg-primary: #ffffff;
   --bg-secondary: #f9fafb;
@@ -6,8 +8,8 @@
   --text-primary: #111827;
   --text-secondary: #6b7280;
   --text-muted: #9ca3af;
-  --accent-sent: #10b981;
-  --accent-received: #3b82f6;
+  --accent-sent: #007AFF;
+  --accent-received: #e5e5e5;
   --selected-bg: #e8f5e9;
   --input-border: #d1d5db;
 }
@@ -20,8 +22,8 @@
   --text-primary: #f3f4f6;
   --text-secondary: #9ca3af;
   --text-muted: #6b7280;
-  --accent-sent: #10b981;
-  --accent-received: #3b82f6;
+  --accent-sent: #007AFF;
+  --accent-received: #3a3a3c;
   --selected-bg: #1e3a2f;
   --input-border: #525252;
 }
