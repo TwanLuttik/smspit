@@ -2,61 +2,160 @@ import { useState, useMemo } from 'react';
 import { Header } from './components/Header';
 import { MessageList } from './components/MessageList';
 import { MessageDetail } from './components/MessageDetail';
-import { usePolling } from './hooks/usePolling';
+import { CallList } from './components/CallList';
+import { CallDetail } from './components/CallDetail';
+import { CallSimulator } from './components/CallSimulator';
+import { SMSSimulator } from './components/SMSSimulator';
+import { useWebSocket } from './hooks/useWebSocket';
 import './index.css';
 
-function App() {
-  const [selectedConversationKey, setSelectedConversationKey] = useState<string | null>(null);
-  const { messages, isLoading, lastPoll, refresh } = usePolling(1000);
+type Tab = 'messages' | 'calls';
 
+function App() {
+  const [activeTab, setActiveTab] = useState<Tab>('messages');
+  const [selectedConversationKey, setSelectedConversationKey] = useState<string | null>(null);
+  const [selectedCallSid, setSelectedCallSid] = useState<string | null>(null);
+  const [showCreateCall, setShowCreateCall] = useState(false);
+  const [showCreateSMS, setShowCreateSMS] = useState(false);
+
+  const { messages, calls, isConnected, lastUpdate, refresh, error } = useWebSocket();
+
+  // Selected conversation messages (thread view)
   const selectedMessages = useMemo(() => {
     if (!selectedConversationKey) return [];
-    return messages.filter((msg) => {
-      const key = `${msg.from}-${msg.to}`;
-      return key === selectedConversationKey;
-    }).sort((a, b) => new Date(a.date_created).getTime() - new Date(b.date_created).getTime());
+    return messages
+      .filter((msg) => [msg.from, msg.to].sort().join('-') === selectedConversationKey)
+      .sort((a, b) => new Date(a.date_created).getTime() - new Date(b.date_created).getTime());
   }, [messages, selectedConversationKey]);
 
   const selectedPhoneNumber = useMemo(() => {
     if (!selectedConversationKey || selectedMessages.length === 0) return null;
     const msg = selectedMessages[0];
+    // Return the "other" party in the conversation
     return msg.direction === 'outbound-api' ? msg.to : msg.from;
   }, [selectedConversationKey, selectedMessages]);
 
+  const selectedCall = useMemo(() => {
+    return calls.find((c) => c.sid === selectedCallSid) || null;
+  }, [calls, selectedCallSid]);
+
   const handleSelectConversation = (key: string) => {
     setSelectedConversationKey(key);
+    if (activeTab !== 'messages') setActiveTab('messages');
   };
 
-  const handleCloseDetail = () => {
-    setSelectedConversationKey(null);
+  const handleCloseMessageDetail = () => setSelectedConversationKey(null);
+  const handleSelectCall = (sid: string) => setSelectedCallSid(sid);
+  const handleCloseCallDetail = () => setSelectedCallSid(null);
+
+  const handleTabChange = (tab: Tab) => {
+    setActiveTab(tab);
+    if (tab === 'messages') setSelectedCallSid(null);
+    else setSelectedConversationKey(null);
   };
+
+  const handleRefresh = () => refresh();
+
+  const statusText = isConnected
+    ? `Live via WebSocket${lastUpdate ? ' · ' + lastUpdate.toLocaleTimeString() : ''}`
+    : error
+      ? `Disconnected — ${error}`
+      : 'Connecting...';
 
   return (
     <div className="app">
-      <Header />
+      <Header activeTab={activeTab} onTabChange={handleTabChange} isConnected={isConnected} />
+
       <div className="main-content">
+        {/* Left: List Panel */}
         <div className="message-list-panel">
-          <MessageList
-            messages={messages}
-            selectedConversationKey={selectedConversationKey}
-            onSelectConversation={handleSelectConversation}
-            isLoading={isLoading}
-          />
+          {activeTab === 'messages' ? (
+            <MessageList
+              messages={messages}
+              selectedConversationKey={selectedConversationKey}
+              onSelectConversation={handleSelectConversation}
+              isLoading={messages.length === 0 && !lastUpdate}
+              onNewSMS={() => {
+                if (activeTab !== 'messages') setActiveTab('messages');
+                setShowCreateSMS(true);
+              }}
+            />
+          ) : (
+            <CallList
+              calls={calls}
+              selectedCallSid={selectedCallSid}
+              onSelectCall={handleSelectCall}
+              isLoading={calls.length === 0 && !lastUpdate}
+              onNewCall={() => setShowCreateCall(true)}
+            />
+          )}
         </div>
-        <div className="message-detail-panel">
-          <MessageDetail
-            messages={selectedMessages}
-            phoneNumber={selectedPhoneNumber}
-            onClose={handleCloseDetail}
-          />
+
+        {/* Right side: Detail + Simulator (flex container) */}
+        <div style={{ 
+          flex: 1, 
+          display: 'flex', 
+          minWidth: 0,
+          overflow: 'hidden' 
+        }}>
+          {/* Detail Panel - gets extra right padding when simulator is open for breathing room */}
+          <div 
+            className="message-detail-panel" 
+            style={{ 
+              flex: 1, 
+              minWidth: 0,
+              paddingRight: (showCreateCall || showCreateSMS) ? '16px' : '0',
+              borderRight: (showCreateCall || showCreateSMS) ? '1px solid var(--border-color)' : 'none',
+              transition: 'padding-right 0.2s ease'
+            }}
+          >
+            {activeTab === 'messages' ? (
+              <MessageDetail
+                messages={selectedMessages}
+                phoneNumber={selectedPhoneNumber}
+                onClose={handleCloseMessageDetail}
+              />
+            ) : (
+              <CallDetail call={selectedCall} onClose={handleCloseCallDetail} />
+            )}
+          </div>
+
+          {/* Simulator Area - only renders when open, takes its natural width */}
+          {showCreateCall && (
+            <CallSimulator
+              isOpen={true}
+              onClose={() => setShowCreateCall(false)}
+              floating={false}
+            />
+          )}
+          {showCreateSMS && (
+            <SMSSimulator
+              isOpen={true}
+              onClose={() => setShowCreateSMS(false)}
+              selectedConversationKey={selectedConversationKey}
+              floating={false}
+            />
+          )}
         </div>
       </div>
+
       <div className="footer">
-        <span>Last poll: {lastPoll ? lastPoll.toLocaleTimeString() : 'Never'}</span>
-        <button onClick={refresh} className="refresh-btn">
+        <span>{statusText}</span>
+        <button onClick={handleRefresh} className="refresh-btn">
           Refresh
         </button>
       </div>
+
+      <CallSimulator
+        isOpen={showCreateCall}
+        onClose={() => setShowCreateCall(false)}
+      />
+
+      <SMSSimulator
+        isOpen={showCreateSMS}
+        onClose={() => setShowCreateSMS(false)}
+        selectedConversationKey={selectedConversationKey}
+      />
     </div>
   );
 }

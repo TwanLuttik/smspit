@@ -1,13 +1,13 @@
 # SMSPit
 
-A mock Twilio SMS server with a web UI for developers. SMSPit intercepts SMS messages sent via the Twilio API and displays them in a real-time web interface, similar to how [Mailpit](https://github.com/axllent/mailpit) works for email.
+A mock Twilio SMS & Voice server with a web UI for developers. SMSPit intercepts SMS messages and voice calls sent via the Twilio API and displays them in a real-time web interface (similar to [Mailpit](https://github.com/axllent/mailpit) for email).
 
 ## Features
 
-- **Mock Twilio API** - Fully compatible with the Twilio Node.js SDK
-- **Web UI** - View all sent SMS messages with filtering
-- **Real-time updates** - Automatic polling every 2 seconds
-- **SQLite storage** - Persistent message storage
+- **Mock Twilio API** - Fully compatible with the Twilio Node.js SDK (Messages + Calls)
+- **Web UI** - View SMS conversations and voice calls with tabs, filtering, and details
+- **Real-time updates** - WebSocket (`/ws`) push for new messages and calls (no polling)
+- **SQLite storage** - Persistent storage for messages and calls
 - **Docker support** - Easy deployment via Docker
 
 ## Quick Start
@@ -61,6 +61,17 @@ await client.messages.create({
 });
 ```
 
+You can also create voice calls:
+
+```javascript
+await client.calls.create({
+  to: '+0987654321',
+  from: '+1234567890',
+  url: 'https://demo.twilio.com/docs/voice.xml',
+  // or: twiml: '<Response><Say>Hello from SMSPit!</Say></Response>'
+});
+```
+
 ### Environment Variables
 
 | Variable | Default | Description |
@@ -80,13 +91,18 @@ await client.messages.create({
 | `GET` | `/2010-04-01/Accounts/:accountSid/Messages.json` | List messages |
 | `GET` | `/2010-04-01/Accounts/:accountSid/Messages/:sid.json` | Get message |
 | `DELETE` | `/2010-04-01/Accounts/:accountSid/Messages/:sid.json` | Delete message |
+| `POST` | `/2010-04-01/Accounts/:accountSid/Calls.json` | Create call |
+| `GET` | `/2010-04-01/Accounts/:accountSid/Calls.json` | List calls |
+| `GET` | `/2010-04-01/Accounts/:accountSid/Calls/:sid.json` | Get call |
 
 ### Internal API (Web UI)
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
 | `GET` | `/api/messages` | List all messages |
-| `GET` | `/api/messages?lastPoll=<timestamp>` | Poll for new messages |
+| `GET` | `/api/messages` | List messages (initial load) |
+| `GET` | `/api/calls` | List calls (initial load) |
+| `WS`  | `/ws` | Real-time push of new messages & calls |
 | `GET` | `/health` | Health check |
 | `GET` | `/web` | Web UI |
 
@@ -115,15 +131,16 @@ smspit/
 
 ## Message Status
 
-Messages are automatically set to `delivered` status. Supported statuses:
+Messages are automatically set to `delivered` status. Supported statuses: `queued`, `sending`, `sent`, `delivered`, `failed`, `undelivered`, `received`, etc.
 
-- `queued`
-- `sending`
-- `sent`
-- `delivered`
-- `failed`
-- `undelivered`
-- `received`
+## Call Status
+
+Calls are captured on creation and immediately marked `completed` with a synthetic duration (5-50s). Supported statuses:
+
+- `queued`, `initiated`, `ringing`, `in-progress`, `answered`, `completed`
+- `busy`, `failed`, `no-answer`, `canceled`
+
+The UI shows the Voice URL / TwiML / Application SID used when the call was created.
 
 ## License
 

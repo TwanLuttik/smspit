@@ -7,6 +7,7 @@ interface MessageListProps {
   selectedConversationKey: string | null;
   onSelectConversation: (key: string) => void;
   isLoading: boolean;
+  onNewSMS?: () => void;
 }
 
 interface Conversation {
@@ -36,6 +37,7 @@ export function MessageList({
   selectedConversationKey,
   onSelectConversation,
   isLoading,
+  onNewSMS,
 }: MessageListProps) {
   const [search, setSearch] = useState('');
 
@@ -49,7 +51,7 @@ export function MessageList({
     const grouped = new Map<string, Conversation>();
 
     filtered.forEach((msg) => {
-      const key = `${msg.from}-${msg.to}`;
+      const key = [msg.from, msg.to].sort().join('-');
       const existing = grouped.get(key);
 
       if (!existing || new Date(msg.date_created) > new Date(existing.lastMessage.date_created)) {
@@ -91,8 +93,11 @@ export function MessageList({
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
       <div
         style={{
-          padding: '16px',
+          padding: '12px 16px',
           borderBottom: '1px solid var(--border-color)',
+          display: 'flex',
+          gap: '10px',
+          alignItems: 'center',
         }}
       >
         <input
@@ -101,16 +106,32 @@ export function MessageList({
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           style={{
+            flex: 1,
             padding: '8px 12px',
             border: '1px solid var(--input-border)',
             borderRadius: '8px',
             fontSize: '14px',
-            width: '100%',
             outline: 'none',
             backgroundColor: 'var(--bg-primary)',
             color: 'var(--text-primary)',
           }}
         />
+        <button
+          onClick={() => onNewSMS?.()}
+          style={{
+            padding: '8px 14px',
+            borderRadius: '8px',
+            border: 'none',
+            backgroundColor: '#10b981',
+            color: 'white',
+            fontSize: '13px',
+            fontWeight: 500,
+            cursor: 'pointer',
+            whiteSpace: 'nowrap',
+          }}
+        >
+          + New SMS
+        </button>
       </div>
 
       <div style={{ flex: 1, overflow: 'auto' }}>
@@ -160,17 +181,18 @@ export function MessageList({
             <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px' }}>
               <div
                 style={{
-                  width: '48px',
-                  height: '48px',
-                  borderRadius: '24px',
-                  backgroundColor: conv.direction === 'sent' ? 'var(--accent-sent)' : 'var(--accent-received)',
+                  width: '40px',
+                  height: '40px',
+                  borderRadius: '10px',
+                  backgroundColor: conv.direction === 'sent' ? 'var(--accent-sent)' : '#64748b',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
                   color: 'white',
-                  fontSize: '14px',
+                  fontSize: '13px',
                   fontWeight: 600,
                   flexShrink: 0,
+                  boxShadow: '0 1px 2px rgba(0,0,0,0.08)',
                 }}
               >
                 {conv.phoneNumber.slice(-4)}

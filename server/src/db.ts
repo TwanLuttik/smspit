@@ -40,7 +40,42 @@ export function initDatabase(): void {
     CREATE INDEX IF NOT EXISTS idx_messages_from ON messages("from");
     CREATE INDEX IF NOT EXISTS idx_messages_to ON messages("to");
     CREATE INDEX IF NOT EXISTS idx_messages_created_at ON messages(created_at);
+
+    CREATE TABLE IF NOT EXISTS calls (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      sid TEXT UNIQUE NOT NULL,
+      account_sid TEXT NOT NULL,
+      "from" TEXT NOT NULL,
+      "to" TEXT NOT NULL,
+      status TEXT DEFAULT 'queued',
+      direction TEXT DEFAULT 'outbound-api',
+      duration INTEGER DEFAULT 0,
+      start_time DATETIME,
+      end_time DATETIME,
+      voice_url TEXT,
+      voice_method TEXT,
+      twiml TEXT,
+      application_sid TEXT,
+      price REAL,
+      price_unit TEXT,
+      digits TEXT DEFAULT '',
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_calls_account_sid ON calls(account_sid);
+    CREATE INDEX IF NOT EXISTS idx_calls_status ON calls(status);
+    CREATE INDEX IF NOT EXISTS idx_calls_from ON calls("from");
+    CREATE INDEX IF NOT EXISTS idx_calls_to ON calls("to");
+    CREATE INDEX IF NOT EXISTS idx_calls_created_at ON calls(created_at);
   `);
+
+  // Safe migration: add 'digits' column for users who had the database before this feature
+  try {
+    db.exec(`ALTER TABLE calls ADD COLUMN digits TEXT DEFAULT ''`);
+  } catch (e) {
+    // Column already exists — ignore the error
+  }
 
   console.log('Database initialized');
 }

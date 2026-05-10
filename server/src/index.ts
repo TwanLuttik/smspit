@@ -1,10 +1,13 @@
 import Fastify from 'fastify';
 import cors from '@fastify/cors';
+import websocketPlugin from '@fastify/websocket';
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
 import { initDatabase, closeDatabase } from './db.js';
 import { messagesRoutes } from './routes/messages.js';
 import { healthRoutes } from './routes/health.js';
+import { callsRoutes } from './routes/calls.js';
+import { registerWebSocket } from './ws.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -36,16 +39,20 @@ async function start() {
       credentials: true,
     });
 
+    await fastify.register(websocketPlugin);
+    await registerWebSocket(fastify);
+
     initDatabase();
 
     await fastify.register(messagesRoutes);
+    await fastify.register(callsRoutes);
     await fastify.register(healthRoutes);
 
     fastify.get('/', async (_, reply) => {
       return reply.send({
         name: 'SMSPit',
         version: '1.0.0',
-        description: 'Mock Twilio SMS Server',
+        description: 'Mock Twilio SMS & Voice Server',
         api_version: '2010-04-01',
         prefix: '/2010-04-01',
         api_port: PORT,
@@ -56,6 +63,7 @@ async function start() {
     await fastify.listen({ port: PORT, host: HOST });
     console.log(`SMSPit API server running on http://${HOST}:${PORT}`);
     console.log(`API base: http://localhost:${PORT}/2010-04-01`);
+    console.log(`WebSocket: ws://localhost:${PORT}/ws`);
     console.log(`Web UI: http://localhost:4011`);
   } catch (err) {
     fastify.log.error(err);

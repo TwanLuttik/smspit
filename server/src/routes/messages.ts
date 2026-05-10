@@ -1,6 +1,7 @@
 import type { FastifyInstance, FastifyRequest } from 'fastify';
 import { createMessage, listMessages, getMessage, deleteMessage } from '../services/message.js';
 import type { CreateMessageInput } from '../types/index.js';
+import { broadcastNewMessage } from '../ws.js';
 
 interface MessageParams {
   accountSid: string;
@@ -44,6 +45,7 @@ export async function messagesRoutes(fastify: FastifyInstance): Promise<void> {
 
     try {
       const message = createMessage(accountSid, input);
+      broadcastNewMessage(message);
       return reply.status(201).send(message);
     } catch (error) {
       fastify.log.error(error);

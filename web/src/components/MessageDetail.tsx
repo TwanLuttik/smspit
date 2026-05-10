@@ -155,10 +155,12 @@ export function MessageDetail({ messages, phoneNumber, onClose }: MessageDetailP
                     padding: '12px 16px',
                     backgroundColor: isMsgSent ? 'var(--accent-sent)' : 'var(--accent-received)',
                     color: isMsgSent ? 'white' : 'var(--text-primary)',
-                    borderRadius: '16px',
-                    borderTopRightRadius: isMsgSent ? '4px' : '16px',
-                    borderTopLeftRadius: isMsgSent ? '16px' : '4px',
-                    boxShadow: '0 1px 2px rgba(0,0,0,0.1)',
+                    borderRadius: '18px',
+                    borderTopRightRadius: isMsgSent ? '6px' : '18px',
+                    borderTopLeftRadius: isMsgSent ? '18px' : '6px',
+                    boxShadow: isMsgSent 
+                      ? '0 1px 2px rgba(0,0,0,0.2)' 
+                      : '0 1px 2px rgba(0,0,0,0.1)',
                   }}
                 >
                   <div
@@ -166,7 +168,8 @@ export function MessageDetail({ messages, phoneNumber, onClose }: MessageDetailP
                       fontSize: '15px',
                       whiteSpace: 'pre-wrap',
                       wordBreak: 'break-word',
-                      lineHeight: '1.4',
+                      lineHeight: '1.45',
+                      color: isMsgSent ? 'white' : 'var(--text-primary)',
                     }}
                   >
                     {parseLinks(msg.body)}
