@@ -1,37 +1,38 @@
 FROM node:22-alpine AS base
+RUN corepack enable && corepack prepare pnpm@11 --activate
 WORKDIR /app
 
 FROM base AS server-deps
 WORKDIR /app
-COPY package*.json ./
-COPY server/package*.json ./server/
-RUN npm ci
+COPY pnpm-lock.yaml pnpm-workspace.yaml package.json ./
+COPY server/package.json ./server/
+RUN pnpm install --frozen-lockfile
 
 FROM base AS web-deps
 WORKDIR /app
-COPY package*.json ./
-COPY web/package*.json ./web/
-RUN npm ci
+COPY pnpm-lock.yaml pnpm-workspace.yaml package.json ./
+COPY web/package.json ./web/
+RUN pnpm install --frozen-lockfile
 
 FROM base AS server-builder
 WORKDIR /app
 COPY --from=server-deps /app/node_modules ./node_modules
 COPY --from=server-deps /app/server ./server
-COPY --from=server-deps /app/package*.json ./
+COPY --from=server-deps /app/pnpm-lock.yaml /app/pnpm-workspace.yaml /app/package.json ./
 COPY server/src ./server/src
 COPY server/tsconfig.json ./server/
-RUN npm run build --workspace=server
+RUN pnpm --filter @smspit/server build
 
 FROM base AS web-builder
 WORKDIR /app
 COPY --from=web-deps /app/node_modules ./node_modules
 COPY --from=web-deps /app/web ./web
-COPY --from=web-deps /app/package*.json ./
+COPY --from=web-deps /app/pnpm-lock.yaml /app/pnpm-workspace.yaml /app/package.json ./
 COPY web/src ./web/src
 COPY web/index.html ./web/
 COPY web/vite.config.ts ./web/
 COPY web/tsconfig*.json ./web/
-RUN npm run build --workspace=web
+RUN pnpm --filter @smspit/web build
 
 FROM base AS server-runtime
 WORKDIR /app

@@ -3,14 +3,16 @@
   "version": "1.0.0",
   "description": "Mock Twilio SMS server with web UI for developers",
   "private": true,
+  "packageManager": "pnpm@11.0.0",
   "workspaces": [
     "server",
     "web"
   ],
   "scripts": {
-    "dev": "npm run dev --workspace=server",
-    "dev:web": "npm run dev --workspace=web",
-    "build": "npm run build --workspace=server && npm run build --workspace=web",
-    "start": "npm run start --workspace=server"
+    "dev": "pnpm -r --parallel dev",
+    "dev:server": "pnpm --filter @smspit/server dev",
+    "dev:web": "pnpm --filter @smspit/web dev",
+    "build": "pnpm -r build",
+    "start": "pnpm --filter @smspit/server start"
   }
 }

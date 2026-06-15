@@ -52,8 +52,7 @@ clean_build() {
 
 build_all() {
   echo "Building SMSPit..."
-  cd server && npm run build && cd ..
-  cd web && npm run build && cd ..
+  pnpm build
   echo "Build complete."
 }
 
@@ -79,25 +78,19 @@ case "${1:-}" in
     echo "Run these commands in separate terminals:"
     echo ""
     echo "Terminal 1 (API Server):"
-    echo "  cd $SCRIPT_DIR/server && npm run dev"
+    echo "  cd $SCRIPT_DIR && pnpm dev:server"
     echo ""
     echo "Terminal 2 (Web UI):"
-    echo "  cd $SCRIPT_DIR/web && npm run dev"
+    echo "  cd $SCRIPT_DIR && pnpm dev:web"
     echo ""
     echo "Then open http://localhost:$WEB_PORT in your browser"
     ;;
   dev:all)
     echo "Starting development mode (single terminal)..."
-    echo "Starting API server on port $TWILIO_PORT..."
-    cd server
-    npm run dev &
-    SERVER_PID=$!
-    sleep 2
-    echo "Starting Web UI on port $WEB_PORT..."
-    cd ../web
-    npm run dev &
-    WEB_PID=$!
-    sleep 2
+    echo "Starting both API server and Web UI..."
+    pnpm dev &
+    DEV_PID=$!
+    sleep 3
     echo ""
     echo "SMSPit running:"
     echo "  API:   http://localhost:$TWILIO_PORT"

@@ -14,22 +14,21 @@ A mock Twilio SMS & Voice server with a web UI for developers. SMSPit intercepts
 
 ### Development
 
-1. Install dependencies:
+1. Install dependencies (using pnpm):
 ```bash
-npm install
+pnpm install
 ```
 
-2. Start the server:
+2. Start both the API server and web UI (single command):
 ```bash
-npm run dev
+pnpm dev
 ```
 
-3. Start the web UI (in another terminal):
-```bash
-npm run dev:web
-```
+3. Open http://localhost:4011 in your browser
 
-4. Open http://localhost:4011 in your browser
+Individual scripts are also available:
+- `pnpm dev:server` – API server only
+- `pnpm dev:web` – web UI only
 
 ### Docker
 
