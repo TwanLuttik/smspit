@@ -1,6 +1,14 @@
-import { parsePhoneNumber } from 'libphonenumber-js';
-import type { TwilioMessage } from '../types';
-import { StatusBadge } from './StatusBadge';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { ArrowUp, MessageCircle, X } from 'lucide-react';
+import type { MessageStatus, TwilioMessage } from '../types';
+import { formatPhoneNumber, formatThreadStamp } from '@/lib/format';
+import { conversationParties, isFromLocal } from '@/lib/conversation';
+import { ContactAvatar } from './ContactAvatar';
+import { cn } from '@/lib/utils';
+
+const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:4010';
+const GROUP_MS = 2 * 60 * 1000;
+const STAMP_MS = 15 * 60 * 1000;
 
 interface MessageDetailProps {
   messages: TwilioMessage[];
@@ -8,193 +16,197 @@ interface MessageDetailProps {
   onClose: () => void;
 }
 
-function formatPhoneNumber(phone: string): string {
-  try {
-    const parsed = parsePhoneNumber(phone, 'US');
-    if (parsed) {
-      return parsed.formatNational();
-    }
-  } catch {
-  }
-  if (phone.length > 6) {
-    return `${phone.slice(0, 3)} ${phone.slice(3, 6)} ${phone.slice(6)}`;
-  }
-  return phone;
-}
-
-function formatDate(dateStr: string) {
-  const date = new Date(dateStr);
-  return date.toLocaleString('en-US', {
-    weekday: 'short',
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-    second: '2-digit',
-  });
-}
-
 function parseLinks(text: string) {
   const urlRegex = /(https?:\/\/[^\s]+)/g;
   const parts = text.split(urlRegex);
   return parts.map((part, i) => {
-    if (urlRegex.test(part)) {
+    if (/^https?:\/\//.test(part)) {
       return (
-        <a
-          key={i}
-          href={part}
-          target="_blank"
-          rel="noopener noreferrer"
-          style={{ color: 'var(--accent-received)', textDecoration: 'underline' }}
-        >
+        <a key={i} href={part} target="_blank" rel="noopener noreferrer">
           {part}
         </a>
       );
     }
-    return part;
+    return <span key={i}>{part}</span>;
   });
 }
 
+function receiptLabel(status: MessageStatus) {
+  if (status === 'failed' || status === 'undelivered') return { text: 'Not Delivered', failed: true };
+  if (status === 'queued' || status === 'accepted' || status === 'sending') return { text: 'Sending', failed: false };
+  return { text: 'Delivered', failed: false };
+}
+
 export function MessageDetail({ messages, phoneNumber, onClose }: MessageDetailProps) {
+  const scrollerRef = useRef<HTMLDivElement>(null);
+  const [draft, setDraft] = useState('');
+  const [isSending, setIsSending] = useState(false);
+
+  const endpoints = useMemo(() => {
+    if (messages.length === 0) return null;
+    const { local, remote } = conversationParties(messages);
+    return { ours: local, theirs: remote };
+  }, [messages]);
+
+  const items = useMemo(() => {
+    const local = endpoints?.ours ?? '';
+    return messages.map((msg, i) => {
+      const prev = messages[i - 1];
+      const next = messages[i + 1];
+      const t = new Date(msg.date_created).getTime();
+      const sent = isFromLocal(msg, local);
+      const sameDir = (a?: TwilioMessage) => !!a && isFromLocal(a, local) === sent;
+      const close = (a?: TwilioMessage, windowMs = GROUP_MS) =>
+        !!a && Math.abs(t - new Date(a.date_created).getTime()) < windowMs;
+
+      const showStamp =
+        !prev ||
+        new Date(msg.date_created).toDateString() !== new Date(prev.date_created).toDateString() ||
+        t - new Date(prev.date_created).getTime() > STAMP_MS;
+
+      return {
+        msg,
+        sent,
+        showStamp,
+        groupedPrev: !showStamp && sameDir(prev) && close(prev),
+        groupedNext: sameDir(next) && close(next) && (
+          new Date(next.date_created).toDateString() === new Date(msg.date_created).toDateString()
+        ) && (new Date(next.date_created).getTime() - t <= STAMP_MS),
+      };
+    });
+  }, [messages, endpoints]);
+
+  useEffect(() => {
+    const el = scrollerRef.current;
+    if (!el) return;
+    el.scrollTop = el.scrollHeight;
+  }, [messages.length, phoneNumber]);
+
+  const send = async () => {
+    if (!endpoints || !draft.trim() || isSending) return;
+    setIsSending(true);
+    try {
+      const res = await fetch(`${API_BASE}/2010-04-01/Accounts/ACdemo/Messages.json`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: new URLSearchParams({
+          From: endpoints.ours,
+          To: endpoints.theirs,
+          Body: draft.trim(),
+        }).toString(),
+      });
+      if (res.ok) {
+        setDraft('');
+      } else {
+        const err = await res.json().catch(() => ({}));
+        alert(err.message || 'Failed to send SMS');
+      }
+    } catch {
+      alert('Could not reach SMSPit server');
+    } finally {
+      setIsSending(false);
+    }
+  };
+
   if (!phoneNumber || messages.length === 0) {
     return (
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          height: '100%',
-          color: 'var(--text-secondary)',
-          backgroundColor: 'var(--bg-tertiary)',
-        }}
-      >
-        <p>Select a conversation to view messages</p>
+      <div className="imsg-empty">
+        <div className="imsg-empty-icon">
+          <MessageCircle size={26} strokeWidth={1.6} />
+        </div>
+        <p className="text-[17px] font-semibold text-[var(--text-primary)] m-0">Messages</p>
+        <p className="text-[14px] m-0 max-w-[260px]">
+          Select a conversation to read the thread.
+        </p>
       </div>
     );
   }
 
-  const isSent = messages[0].direction === 'outbound-api';
+  const last = items[items.length - 1];
+  const lastReceipt = last?.sent ? receiptLabel(last.msg.status) : null;
 
   return (
-    <div
-      style={{
-        display: 'flex',
-        flexDirection: 'column',
-        height: '100%',
-        backgroundColor: 'var(--bg-tertiary)',
-      }}
-    >
-      <div
-        style={{
-          padding: '16px',
-          borderBottom: '1px solid var(--border-color)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          backgroundColor: 'var(--bg-primary)',
-        }}
-      >
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <div
-            style={{
-              width: '40px',
-              height: '40px',
-              borderRadius: '20px',
-              backgroundColor: isSent ? 'var(--accent-sent)' : 'var(--accent-received)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              color: 'white',
-              fontSize: '14px',
-              fontWeight: 600,
-            }}
-          >
-            {phoneNumber.slice(-4)}
-          </div>
-          <div>
-            <h2 style={{ margin: 0, fontSize: '16px', fontWeight: 600, color: 'var(--text-primary)' }}>
-              {formatPhoneNumber(phoneNumber)}
-            </h2>
-            <span style={{ fontSize: '12px', color: isSent ? 'var(--accent-sent)' : 'var(--accent-received)' }}>
-              {isSent ? 'Sent' : 'Received'} · {messages.length} messages
-            </span>
+    <div className="flex flex-col h-full bg-[var(--bg-thread)]">
+      <div className="imsg-thread-header">
+        <button
+          type="button"
+          onClick={onClose}
+          className="imsg-icon-btn absolute right-2 top-2 text-[var(--text-secondary)]"
+          aria-label="Close conversation"
+        >
+          <X size={16} />
+        </button>
+        <ContactAvatar phone={phoneNumber} size={40} />
+        <div className="text-center">
+          <div className="imsg-thread-name">{formatPhoneNumber(phoneNumber)}</div>
+          <div className="imsg-thread-sub">
+            {messages.length} {messages.length === 1 ? 'message' : 'messages'}
           </div>
         </div>
-        <button
-          onClick={onClose}
-          style={{
-            padding: '4px 8px',
-            border: 'none',
-            background: 'none',
-            cursor: 'pointer',
-            fontSize: '14px',
-            color: 'var(--text-secondary)',
-          }}
-        >
-          ✕
-        </button>
       </div>
 
-      <div style={{ flex: 1, overflow: 'auto', padding: '16px' }}>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-          {messages.map((msg) => {
-            const isMsgSent = msg.direction === 'outbound-api';
-            return (
+      <div ref={scrollerRef} className="flex-1 overflow-auto px-3 pt-1 pb-2">
+        {items.map(({ msg, sent, showStamp, groupedPrev, groupedNext }) => (
+          <div key={msg.sid}>
+            {showStamp && <div className="imsg-date">{formatThreadStamp(msg.date_created)}</div>}
+            <div
+              className={cn('flex', sent ? 'justify-end' : 'justify-start')}
+              style={{ marginTop: groupedPrev ? 2 : 8 }}
+              title={msg.sid}
+            >
               <div
-                key={msg.sid}
-                style={{
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: isMsgSent ? 'flex-end' : 'flex-start',
-                }}
+                className={cn(
+                  'msg-bubble',
+                  sent ? 'sent' : 'received',
+                  groupedPrev && 'grouped-prev',
+                  groupedNext && 'grouped-next',
+                )}
               >
-                <div
-                  style={{
-                    maxWidth: '70%',
-                    padding: '12px 16px',
-                    backgroundColor: isMsgSent ? 'var(--accent-sent)' : 'var(--accent-received)',
-                    color: isMsgSent ? 'white' : 'var(--text-primary)',
-                    borderRadius: '18px',
-                    borderTopRightRadius: isMsgSent ? '6px' : '18px',
-                    borderTopLeftRadius: isMsgSent ? '18px' : '6px',
-                    boxShadow: isMsgSent 
-                      ? '0 1px 2px rgba(0,0,0,0.2)' 
-                      : '0 1px 2px rgba(0,0,0,0.1)',
-                  }}
-                >
-                  <div
-                    style={{
-                      fontSize: '15px',
-                      whiteSpace: 'pre-wrap',
-                      wordBreak: 'break-word',
-                      lineHeight: '1.45',
-                      color: isMsgSent ? 'white' : 'var(--text-primary)',
-                    }}
-                  >
-                    {parseLinks(msg.body)}
-                  </div>
-                </div>
-                <div
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '8px',
-                    marginTop: '4px',
-                    paddingLeft: isMsgSent ? '0' : '8px',
-                    paddingRight: isMsgSent ? '8px' : '0',
-                  }}
-                >
-                  <StatusBadge status={msg.status} />
-                  <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
-                    {formatDate(msg.date_created)}
-                  </span>
-                </div>
+                {parseLinks(msg.body)}
               </div>
-            );
-          })}
-        </div>
+            </div>
+          </div>
+        ))}
+
+        {lastReceipt && (
+          <div className={cn('flex justify-end')}>
+            <div className={cn('imsg-receipt', lastReceipt.failed && 'failed')}>
+              {lastReceipt.text}
+            </div>
+          </div>
+        )}
       </div>
+
+      <form
+        className="imsg-compose"
+        onSubmit={(e) => {
+          e.preventDefault();
+          void send();
+        }}
+      >
+        <div className="imsg-compose-field">
+          <textarea
+            value={draft}
+            rows={1}
+            placeholder="iMessage"
+            onChange={(e) => setDraft(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                void send();
+              }
+            }}
+          />
+        </div>
+        <button
+          type="submit"
+          className="imsg-send"
+          disabled={isSending || !draft.trim()}
+          aria-label="Send"
+        >
+          <ArrowUp size={18} strokeWidth={2.6} />
+        </button>
+      </form>
     </div>
   );
 }

@@ -7,6 +7,7 @@ import { CallDetail } from './components/CallDetail';
 import { CallSimulator } from './components/CallSimulator';
 import { SMSSimulator } from './components/SMSSimulator';
 import { useWebSocket } from './hooks/useWebSocket';
+import { conversationKey, conversationParties } from './lib/conversation';
 import './index.css';
 
 type Tab = 'messages' | 'calls';
@@ -24,15 +25,13 @@ function App() {
   const selectedMessages = useMemo(() => {
     if (!selectedConversationKey) return [];
     return messages
-      .filter((msg) => [msg.from, msg.to].sort().join('-') === selectedConversationKey)
+      .filter((msg) => conversationKey(msg.from, msg.to) === selectedConversationKey)
       .sort((a, b) => new Date(a.date_created).getTime() - new Date(b.date_created).getTime());
   }, [messages, selectedConversationKey]);
 
   const selectedPhoneNumber = useMemo(() => {
     if (!selectedConversationKey || selectedMessages.length === 0) return null;
-    const msg = selectedMessages[0];
-    // Return the "other" party in the conversation
-    return msg.direction === 'outbound-api' ? msg.to : msg.from;
+    return conversationParties(selectedMessages).remote;
   }, [selectedConversationKey, selectedMessages]);
 
   const selectedCall = useMemo(() => {
@@ -91,22 +90,11 @@ function App() {
           )}
         </div>
 
-        {/* Right side: Detail + Simulator (flex container) */}
-        <div style={{ 
-          flex: 1, 
-          display: 'flex', 
-          minWidth: 0,
-          overflow: 'hidden' 
-        }}>
-          {/* Detail Panel - gets extra right padding when simulator is open for breathing room */}
-          <div 
-            className="message-detail-panel" 
-            style={{ 
-              flex: 1, 
-              minWidth: 0,
-              paddingRight: (showCreateCall || showCreateSMS) ? '16px' : '0',
+        <div className="flex flex-1 min-w-0 overflow-hidden">
+          <div
+            className="message-detail-panel flex-1 min-w-0"
+            style={{
               borderRight: (showCreateCall || showCreateSMS) ? '1px solid var(--border-color)' : 'none',
-              transition: 'padding-right 0.2s ease'
             }}
           >
             {activeTab === 'messages' ? (
@@ -141,21 +129,8 @@ function App() {
 
       <div className="footer">
         <span>{statusText}</span>
-        <button onClick={handleRefresh} className="refresh-btn">
-          Refresh
-        </button>
+        <button onClick={handleRefresh} className="refresh-btn">↻</button>
       </div>
-
-      <CallSimulator
-        isOpen={showCreateCall}
-        onClose={() => setShowCreateCall(false)}
-      />
-
-      <SMSSimulator
-        isOpen={showCreateSMS}
-        onClose={() => setShowCreateSMS(false)}
-        selectedConversationKey={selectedConversationKey}
-      />
     </div>
   );
 }

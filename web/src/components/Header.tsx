@@ -1,5 +1,6 @@
-import { useTheme } from '../hooks/useTheme';
 import { Moon, Sun } from 'lucide-react';
+import { useTheme } from '../hooks/useTheme';
+import { cn } from '@/lib/utils';
 
 type Tab = 'messages' | 'calls';
 
@@ -11,63 +12,29 @@ interface HeaderProps {
 
 export function Header({ activeTab = 'messages', onTabChange, isConnected = true }: HeaderProps) {
   const { theme, toggleTheme } = useTheme();
-
   const showTabs = !!onTabChange;
 
   return (
-    <header
-      style={{
-        padding: '10px 20px',
-        borderBottom: '1px solid var(--border-color)',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        backgroundColor: 'var(--bg-primary)',
-        gap: '16px',
-        boxShadow: '0 1px 3px rgba(0,0,0,0.03)',
-      }}
-    >
-      <div style={{ display: 'flex', alignItems: 'center', gap: '24px' }}>
-        <div>
-          <h1 style={{ margin: 0, fontSize: '19px', fontWeight: 700, color: 'var(--text-primary)' }}>
+    <header className="flex items-center justify-between border-b border-[var(--border-color)] bg-[var(--bg-header)] px-3 py-2 text-sm gap-3 shrink-0">
+      <div className="flex items-center gap-3 min-w-0">
+        <div className="min-w-0">
+          <h1 className="m-0 text-[17px] font-semibold tracking-[-0.03em] text-[var(--text-primary)] leading-none">
             SMSPit
           </h1>
-          <p style={{ margin: '1px 0 0', fontSize: '12px', color: 'var(--text-muted)' }}>
-            Twilio development environment
-          </p>
+          <p className="m-0 mt-0.5 text-[11px] text-[var(--text-secondary)]">Twilio dev environment</p>
         </div>
 
         {showTabs && (
-          <div style={{ display: 'flex', gap: '3px', background: 'var(--bg-tertiary)', borderRadius: '10px', padding: '3px' }}>
+          <div className="imsg-tabs">
             <button
               onClick={() => onTabChange('messages')}
-              style={{
-                padding: '7px 16px',
-                borderRadius: '8px',
-                border: 'none',
-                backgroundColor: activeTab === 'messages' ? 'var(--bg-primary)' : 'transparent',
-                color: activeTab === 'messages' ? 'var(--text-primary)' : 'var(--text-secondary)',
-                fontSize: '13.5px',
-                fontWeight: 500,
-                cursor: 'pointer',
-                boxShadow: activeTab === 'messages' ? '0 1px 2px rgba(0,0,0,0.06)' : 'none',
-              }}
+              className={cn(activeTab === 'messages' && 'active')}
             >
               Messages
             </button>
             <button
               onClick={() => onTabChange('calls')}
-              style={{
-                padding: '7px 16px',
-                borderRadius: '8px',
-                border: 'none',
-                backgroundColor: activeTab === 'calls' ? 'var(--bg-primary)' : 'transparent',
-                color: activeTab === 'calls' ? 'var(--text-primary)' : 'var(--text-secondary)',
-                fontSize: '13.5px',
-                fontWeight: 500,
-                cursor: 'pointer',
-                boxShadow: activeTab === 'calls' ? '0 1px 2px rgba(0,0,0,0.06)' : 'none',
-              }}
+              className={cn(activeTab === 'calls' && 'active')}
             >
               Calls
             </button>
@@ -75,34 +42,23 @@ export function Header({ activeTab = 'messages', onTabChange, isConnected = true
         )}
       </div>
 
-      <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+      <div className="flex items-center gap-2.5">
         <button
+          type="button"
           onClick={toggleTheme}
-          style={{
-            padding: '6px',
-            border: '1px solid var(--input-border)',
-            borderRadius: '6px',
-            backgroundColor: 'var(--bg-secondary)',
-            color: 'var(--text-primary)',
-            cursor: 'pointer',
-            transition: 'background-color 0.15s',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-          }}
+          className="imsg-icon-btn"
+          aria-label={theme === 'light' ? 'Switch to dark mode' : 'Switch to light mode'}
         >
-          {theme === 'light' ? <Moon size={18} /> : <Sun size={18} />}
+          {theme === 'light' ? <Moon size={16} /> : <Sun size={16} />}
         </button>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+        <div className="flex items-center gap-1.5 pr-1">
           <span
-            style={{
-              width: '8px',
-              height: '8px',
-              borderRadius: '50%',
-              backgroundColor: isConnected ? '#10b981' : '#f59e0b',
-            }}
+            className={cn(
+              'inline-block h-1.5 w-1.5 rounded-full',
+              isConnected ? 'bg-[var(--accent-success)]' : 'bg-[var(--accent-warning)]',
+            )}
           />
-          <span style={{ fontSize: '14px', color: 'var(--text-secondary)' }}>
+          <span className="text-[12px] text-[var(--text-secondary)]">
             {isConnected ? 'Live' : 'Reconnecting'}
           </span>
         </div>

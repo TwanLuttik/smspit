@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "description": "Mock Twilio SMS server with web UI for developers",
   "private": true,
-  "packageManager": "pnpm@11.0.0",
+  "packageManager": "pnpm@11.21.0",
   "workspaces": [
     "server",
     "web"

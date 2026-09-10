@@ -1,49 +1,42 @@
-import type { MessageStatus } from '../types';
+import type { CallStatus, MessageStatus } from '../types';
 
 interface StatusBadgeProps {
-  status: MessageStatus;
+  status: MessageStatus | CallStatus | string;
 }
 
 const STATUS_COLORS: Record<string, string> = {
-  queued: '#f59e0b',
-  sending: '#3b82f6',
-  sent: '#6366f1',
-  delivered: '#22c55e',
-  failed: '#ef4444',
-  undelivered: '#f97316',
-  receiving: '#8b5cf6',
-  received: '#14b8a6',
-  accepted: '#22c55e',
-  scheduled: '#a855f7',
-  canceled: '#64748b',
-
-  // Call statuses - better hierarchy
-  initiated: '#3b82f6',
-  ringing: '#a78bfa',
-  'in-progress': '#6366f1',
-  answered: '#22c55e',
-  completed: '#14b8a6',
-  busy: '#f59e0b',
-  'no-answer': '#f97316',
+  queued: '#ff9f0a',
+  sending: '#007aff',
+  sent: '#5856d6',
+  delivered: '#34c759',
+  failed: '#ff3b30',
+  undelivered: '#ff9500',
+  receiving: '#af52de',
+  received: '#30d158',
+  accepted: '#34c759',
+  scheduled: '#af52de',
+  canceled: '#8e8e93',
+  initiated: '#007aff',
+  ringing: '#af52de',
+  'in-progress': '#5856d6',
+  answered: '#34c759',
+  completed: '#30d158',
+  busy: '#ff9f0a',
+  'no-answer': '#ff9500',
 };
 
 export function StatusBadge({ status }: StatusBadgeProps) {
-  const color = STATUS_COLORS[status] || '#6b7280';
+  const color = STATUS_COLORS[status] || '#8e8e93';
 
   return (
     <span
+      className="inline-flex items-center px-1.5 rounded-full text-[11px] font-medium leading-[16px] capitalize"
       style={{
-        display: 'inline-flex',
-        alignItems: 'center',
-        padding: '2px 8px',
-        borderRadius: '9999px',
-        fontSize: '12px',
-        fontWeight: 500,
-        color: 'white',
-        backgroundColor: color,
+        color,
+        backgroundColor: `color-mix(in srgb, ${color} 16%, transparent)`,
       }}
     >
-      {status}
+      {String(status).replace('-', ' ')}
     </span>
   );
 }

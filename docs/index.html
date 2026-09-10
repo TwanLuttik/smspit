@@ -3,28 +3,49 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>SMSPit — Mock Twilio SMS for developers</title>
+  <title>SMSPit — Mock Twilio SMS &amp; Voice</title>
   <link rel="stylesheet" href="styles.css">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
 </head>
 <body>
+  <nav class="nav">
+    <div class="nav-inner">
+      <div class="nav-brand">SMSPit</div>
+      <div class="nav-links">
+        <a href="#features">Features</a>
+        <a href="#usage">Usage</a>
+        <a href="#api">API</a>
+        <a href="#docker">Docker</a>
+        <a href="#testing">Testing</a>
+        <a href="https://github.com/" target="_blank" rel="noopener">GitHub</a>
+      </div>
+    </div>
+  </nav>
   <main>
     <header>
       <div class="logo">
-        <svg width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <rect width="40" height="40" rx="8" fill="#222"/>
+        <svg width="42" height="42" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <rect width="40" height="40" rx="6" fill="#111"/>
           <path d="M10 14h20v2H10v-2zm0 6h20v2H10v-2zm0 6h14v2H10v-2z" fill="#4ade80"/>
         </svg>
         <span>SMSPit</span>
       </div>
-      <p class="tagline">Mock Twilio SMS server for developers</p>
-      <p class="description">SMSPit intercepts SMS messages sent via the Twilio API and displays them in a real-time web interface.</p>
+      <p class="tagline">Mock Twilio SMS &amp; Voice server for developers</p>
+      <p class="description">Drop-in replacement for Twilio. Real-time web UI (WebSocket), SQLite, compact dark UI with sharp corners. Ideal for local SMS/voice testing.</p>
+      <div class="badges">
+        <span class="badge">Fastify + SQLite</span>
+        <span class="badge">WebSocket live</span>
+        <span class="badge">Twilio SDK compatible</span>
+        <span class="badge">~87% coverage</span>
+      </div>
     </header>
 
-    <section class="code-section">
+    <section class="code-section" id="usage">
+      <h2 style="margin:0 0 6px 4px;font-size:12px;color:#a1a1aa">Usage examples</h2>
       <div class="tabs">
         <button class="tab active" data-lang="node">Node.js</button>
         <button class="tab" data-lang="php">PHP</button>
+        <button class="tab" data-lang="python">Python</button>
       </div>
       <div class="code-block active" data-lang="node">
         <pre><code class="language-javascript">import twilio from 'twilio';
@@ -47,48 +68,52 @@ await client.messages.create({
       </div>
       <div class="code-block" data-lang="php">
         <pre><code class="language-php">&lt;?php
-require_once '/path/to/vendor/autoload.php';
-
-use Twilio\Rest\Client;
-
-$client = new Client(
-  'ACxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',
-  'your_auth_token',
-  [
-    'host' =&gt; 'localhost',
-    'port' =&gt; 4010,
-  ]
-);
-
-$client-&gt;messages-&gt;create(
-  '+0987654321',
-  [
-    'from' =&gt; '+1234567890',
-    'body' =&gt; 'Hello from SMSPit!',
-  ]
-);</code></pre>
+$client = new Twilio\Rest\Client('ACxxx', 'token', [
+    'host' =&gt; 'localhost', 'port' =&gt; 4010,
+]);
+$client-&gt;messages-&gt;create('+0987654321', [
+    'from' =&gt; '+1234567890', 'body' =&gt; 'Hello from SMSPit!',
+]);</code></pre>
+      </div>
+      <div class="code-block" data-lang="python">
+        <pre><code class="language-python">from twilio.rest import Client
+client = Client('ACxxx', 'token')
+client.messages.create(to='+1...', from_='+2...', body='hi SMSPit')</code></pre>
       </div>
     </section>
 
     <section class="quickstart">
-      <div class="step">
-        <span class="step-num">1</span>
-        <span class="step-text">Install dependencies</span>
-        <code>npm install</code>
-      </div>
-      <div class="step">
-        <span class="step-num">2</span>
-        <span class="step-text">Start the server</span>
-        <code>npm run dev</code>
-      </div>
-      <div class="step">
-        <span class="step-num">3</span>
-        <span class="step-text">Send an SMS via the Twilio SDK</span>
+      <h2 style="font-size:12px;margin:0 0 4px 2px;color:#a1a1aa">Local (pnpm)</h2>
+      <div class="step"><span class="step-num">1</span><span>pnpm install</span></div>
+      <div class="step"><span class="step-num">2</span><span>pnpm dev</span><span style="margin-left:auto;font-size:10px;color:#555">(:4010 + :4011)</span></div>
+      <div class="step"><span class="step-num">3</span><span>Send via Twilio SDK or built-in simulators</span></div>
+    </section>
+
+    <section id="features" class="section">
+      <h2>Features</h2>
+      <div class="grid">
+        <div class="card">Twilio Messages + Calls (2010-04-01 compatible)</div>
+        <div class="card">Real-time via WS, compact dark sharp UI</div>
+        <div class="card">Built-in SMS + Call simulators (DTMF)</div>
+        <div class="card">Persistent SQLite • Docker support</div>
+        <div class="card">85%+ coverage on backend services/routes</div>
       </div>
     </section>
 
     <footer>
-      <a href="https://github.com/your-username/smspit" target="_blank" rel="noopener" class="btn">
+      <a href="https://github.com/" target="_blank" class="btn" rel="noopener">GitHub</a>
+      <a href="#api" class="btn">API Reference</a>
+      <span style="margin-left:auto;font-size:10px;color:#555">MIT • Dark • Sharp • Compact • ~87% cov</span>
+    </footer>
+  </main>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-javascript.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-php.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-python.min.js"></script>
+  <script src="script.js"></script>
+</body>
+</html>
         <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg>
         GitHub
       </a>

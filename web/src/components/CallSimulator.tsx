@@ -95,140 +95,61 @@ export function CallSimulator({ isOpen, onClose, floating }: Props) {
   const isFloating = floating !== false;
 
   return (
-    <div style={{
-      position: isFloating ? 'fixed' : 'relative',
-      top: isFloating ? '16px' : 'auto',
-      right: isFloating ? '16px' : 'auto',
-      bottom: isFloating ? '16px' : 'auto',
-      width: '380px',
-      flexShrink: 0,
-      height: isFloating ? 'auto' : '100%',
-      background: 'var(--bg-primary)',
-      borderRadius: isFloating ? '20px' : '0 16px 16px 0',
-      boxShadow: isFloating ? '0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1)' : 'none',
-      border: '1px solid var(--border-color)',
-      borderLeft: isFloating ? '1px solid var(--border-color)' : 'none',
-      zIndex: isFloating ? 200 : 'auto',
-      display: 'flex',
-      flexDirection: 'column',
-      overflow: 'hidden'
-    }}>
-      {/* ChatGPT-style Header */}
-      <div style={{
-        padding: '14px 18px',
-        background: 'var(--bg-secondary)',
-        borderBottom: '1px solid var(--border-color)',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between'
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-          <div style={{
-            width: '32px', height: '32px', borderRadius: '9999px',
-            background: 'linear-gradient(135deg, #6366f1, #8b5cf6)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            color: 'white', fontSize: '15px'
-          }}>
-            ☎︎
-          </div>
+    <div className={isFloating ? "fixed right-3 bottom-3 z-[200] w-[280px] flex-shrink-0 shadow-xl border border-[var(--border-color)] rounded-2xl overflow-hidden bg-[var(--bg-sidebar)] flex flex-col text-sm" : "simulator h-full"}>
+      <div className="simulator-header">
+        <div className="flex items-center gap-2">
+          <div className="w-6 h-6 rounded-full bg-[var(--accent-sent)] flex items-center justify-center text-[11px] text-white">☎︎</div>
           <div>
-            <div style={{ fontWeight: 600, fontSize: '15px' }}>Call Simulator</div>
-            <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>Virtual Twilio Voice</div>
+            <div className="font-medium leading-none">Call</div>
+            <div className="text-[11px] text-[var(--text-secondary)] mt-0.5">Virtual voice</div>
           </div>
         </div>
-        <button onClick={onClose} style={{ color: 'var(--text-secondary)', background: 'none', border: 'none', fontSize: '22px', cursor: 'pointer' }}>×</button>
+        <button onClick={onClose} className="imsg-icon-btn text-[var(--text-secondary)]">×</button>
       </div>
 
-      {/* Pre-call Form - ChatGPT style */}
       {!call && (
-        <div style={{ padding: isFloating ? '22px 20px' : '20px 22px' }}>
-          <div style={{ marginBottom: '16px' }}>
-            <div style={{ fontSize: '12px', fontWeight: 500, color: 'var(--text-secondary)', marginBottom: '5px' }}>From Number</div>
-            <input
-              value={from}
-              onChange={e => setFrom(e.target.value)}
-              style={{ width: '100%', padding: '11px 14px', borderRadius: '10px', border: '1px solid var(--input-border)', background: 'var(--bg-secondary)', fontSize: '14.5px' }}
-            />
+        <div className="simulator-body space-y-3">
+          <div>
+            <div className="text-[var(--text-secondary)] text-[11px] mb-1">From</div>
+            <input value={from} onChange={e => setFrom(e.target.value)} className="input" />
           </div>
-
-          <div style={{ marginBottom: '16px' }}>
-            <div style={{ fontSize: '12px', fontWeight: 500, color: 'var(--text-secondary)', marginBottom: '5px' }}>To Number</div>
-            <input
-              value={to}
-              onChange={e => setTo(e.target.value)}
-              style={{ width: '100%', padding: '11px 14px', borderRadius: '10px', border: '1px solid var(--input-border)', background: 'var(--bg-secondary)', fontSize: '14.5px' }}
-            />
+          <div>
+            <div className="text-[var(--text-secondary)] text-[11px] mb-1">To</div>
+            <input value={to} onChange={e => setTo(e.target.value)} className="input" />
           </div>
-
-          <div style={{ marginBottom: '20px' }}>
-            <div style={{ fontSize: '12px', fontWeight: 500, color: 'var(--text-secondary)', marginBottom: '5px' }}>Voice Script</div>
-            <textarea
-              value={twiml}
-              onChange={e => setTwiml(e.target.value)}
-              rows={5}
-              style={{
-                width: '100%',
-                padding: '12px 14px',
-                borderRadius: '10px',
-                border: '1px solid var(--input-border)',
-                background: 'var(--bg-secondary)',
-                fontSize: '13px',
-                fontFamily: 'monospace',
-                resize: 'vertical'
-              }}
-            />
+          <div>
+            <div className="text-[var(--text-secondary)] text-[11px] mb-1">TwiML / Script</div>
+            <textarea value={twiml} onChange={e => setTwiml(e.target.value)} rows={3} className="textarea text-[12px] font-mono" />
           </div>
-
-          <button
-            onClick={startCall}
-            disabled={isCreating}
-            style={{
-              width: '100%',
-              padding: '13px 0',
-              background: isCreating ? '#475569' : '#6366f1',
-              color: 'white',
-              border: 'none',
-              borderRadius: '12px',
-              fontSize: '15px',
-              fontWeight: 600,
-              transition: 'all 0.2s'
-            }}
-          >
-            {isCreating ? 'Connecting...' : 'Start Call'}
+          <button onClick={startCall} disabled={isCreating} className="btn btn-primary w-full">
+            {isCreating ? 'Connecting…' : 'Start Call'}
           </button>
         </div>
       )}
 
-      {/* Active Simulator */}
       {call && (
         <>
-          <div style={{ padding: '12px 16px', background: 'var(--bg-secondary)', borderBottom: '1px solid var(--border-color)' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <div style={{ fontSize: '15px', fontWeight: 600 }}>{to}</div>
-              <div style={{ fontSize: '11px', padding: '1px 9px', borderRadius: '999px', background: phase === 'answered' ? '#166534' : '#854d0e', color: phase === 'answered' ? '#4ade80' : '#fde047' }}>
-                {phase.toUpperCase()}
-              </div>
-            </div>
-            {digits && <div style={{ marginTop: '6px', fontSize: '17px', fontFamily: 'monospace', color: '#6366f1' }}>{digits}</div>}
+          <div className="px-3 py-2 bg-[var(--bg-secondary)] border-b border-[var(--border-color)] flex items-center justify-between">
+            <div className="font-medium tabular-nums">{to}</div>
+            <div className={`text-[11px] px-2 py-0.5 rounded-full capitalize ${phase === 'answered' ? 'text-[var(--accent-success)] bg-[color-mix(in_srgb,var(--accent-success)_16%,transparent)]' : 'text-[var(--accent-warning)] bg-[color-mix(in_srgb,var(--accent-warning)_16%,transparent)]'}`}>{phase}</div>
           </div>
 
-          <div style={{ flex: 1, overflow: 'auto', padding: '10px 14px', fontSize: '12.5px', background: 'var(--bg-tertiary)' }}>
-            {transcript.length === 0 && <div style={{ color: 'var(--text-muted)' }}>Transcript...</div>}
-            {transcript.map((l, i) => <div key={i} style={{ marginBottom: '3px' }}>{l}</div>)}
+          <div className="flex-1 overflow-auto p-3 bg-[var(--bg-secondary)] text-[12px] font-mono text-[var(--text-secondary)] space-y-0.5">
+            {transcript.length === 0 && <div className="text-[var(--text-muted)]">Transcript…</div>}
+            {transcript.map((l, i) => <div key={i}>{l}</div>)}
+            {digits && <div className="text-[var(--accent-sent)] pt-1">DTMF: {digits}</div>}
           </div>
 
-          <div style={{ padding: '10px 12px', background: 'var(--bg-primary)' }}>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: '6px', marginBottom: '10px' }}>
+          <div className="p-2.5 bg-[var(--bg-sidebar)] border-t border-[var(--border-color)]">
+            <div className="grid grid-cols-3 gap-1.5 mb-2">
               {KEYPAD.map(d => (
                 <button key={d} onClick={() => pressKey(d)} disabled={phase !== 'answered'}
-                  style={{ height: '46px', fontSize: '18px', borderRadius: '8px', background: phase === 'answered' ? 'var(--bg-secondary)' : '#f1f5f9', border: '1px solid var(--border-color)' }}>
+                  className="h-8 text-sm border border-[var(--border-color)] bg-[var(--bg-secondary)] rounded-full disabled:opacity-40 active:bg-[var(--bg-tertiary)]">
                   {d}
                 </button>
               ))}
             </div>
-            <button onClick={hangUp} style={{ width: '100%', padding: '10px', background: '#ef4444', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 700 }}>
-              END CALL
-            </button>
+            <button onClick={hangUp} className="w-full h-8 text-sm bg-[var(--accent-danger)] text-white rounded-full font-semibold">End Call</button>
           </div>
         </>
       )}

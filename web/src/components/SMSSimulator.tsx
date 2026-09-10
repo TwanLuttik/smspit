@@ -65,108 +65,55 @@ export function SMSSimulator({ isOpen, onClose, selectedConversationKey, floatin
   const isFloating = floating !== false;
 
   return (
-    <div style={{
-      position: isFloating ? 'fixed' : 'relative',
-      top: isFloating ? '16px' : 'auto',
-      right: isFloating ? '16px' : 'auto',
-      bottom: isFloating ? '16px' : 'auto',
-      width: '380px',
-      flexShrink: 0,
-      background: 'var(--bg-primary)',
-      borderRadius: isFloating ? '20px' : '0 16px 16px 0',
-      boxShadow: isFloating ? '0 25px 50px -12px rgb(0 0 0 / 0.25)' : 'none',
-      border: '1px solid var(--border-color)',
-      borderLeft: isFloating ? undefined : 'none',
-      zIndex: isFloating ? 200 : 'auto',
-      display: 'flex',
-      flexDirection: 'column',
-      overflow: 'hidden'
-    }}>
-      {/* Header */}
-      <div style={{
-        padding: '14px 18px',
-        background: 'var(--bg-secondary)',
-        borderBottom: '1px solid var(--border-color)',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between'
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-          <div style={{
-            width: '32px', height: '32px', borderRadius: '10px',
-            background: 'linear-gradient(135deg, #10b981, #34d399)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            color: 'white', fontSize: '16px'
-          }}>
-            💬
-          </div>
+    <div className={isFloating ? "fixed right-3 bottom-3 z-[200] w-[280px] flex-shrink-0 shadow-xl border border-[var(--border-color)] rounded-2xl overflow-hidden bg-[var(--bg-sidebar)] flex flex-col text-sm" : "simulator"}>
+      <div className="simulator-header">
+        <div className="flex items-center gap-2">
+          <div className="w-6 h-6 rounded-full bg-[var(--accent-sent)] flex items-center justify-center text-[11px] text-white">💬</div>
           <div>
-            <div style={{ fontWeight: 600, fontSize: '15px' }}>SMS Simulator</div>
-            <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
-              {isReplying ? 'Replying in conversation' : 'Send test messages'}
-            </div>
+            <div className="font-medium leading-none">SMS</div>
+            <div className="text-[11px] text-[var(--text-secondary)] mt-0.5">{isReplying ? 'Reply' : 'Test send'}</div>
           </div>
         </div>
-        <button onClick={onClose} style={{ color: 'var(--text-secondary)', background: 'none', border: 'none', fontSize: '22px', cursor: 'pointer' }}>×</button>
+        <button onClick={onClose} className="imsg-icon-btn text-[var(--text-secondary)]">×</button>
       </div>
 
-      <div style={{ padding: isFloating ? '20px' : '20px 22px', flex: 1 }}>
+      <div className="simulator-body space-y-3">
         {!isReplying && (
           <>
-            <div style={{ marginBottom: '14px' }}>
-              <div style={{ fontSize: '12px', fontWeight: 500, color: 'var(--text-secondary)', marginBottom: '5px' }}>From</div>
-              <input value={from} onChange={e => setFrom(e.target.value)} style={{ width: '100%', padding: '10px 12px', borderRadius: '10px', border: '1px solid var(--input-border)', background: 'var(--bg-secondary)', fontSize: '14px' }} />
+            <div>
+              <div className="text-[var(--text-secondary)] text-[11px] mb-1">From</div>
+              <input value={from} onChange={e => setFrom(e.target.value)} className="input" />
             </div>
-            <div style={{ marginBottom: '14px' }}>
-              <div style={{ fontSize: '12px', fontWeight: 500, color: 'var(--text-secondary)', marginBottom: '5px' }}>To</div>
-              <input value={to} onChange={e => setTo(e.target.value)} style={{ width: '100%', padding: '10px 12px', borderRadius: '10px', border: '1px solid var(--input-border)', background: 'var(--bg-secondary)', fontSize: '14px' }} />
+            <div>
+              <div className="text-[var(--text-secondary)] text-[11px] mb-1">To</div>
+              <input value={to} onChange={e => setTo(e.target.value)} className="input" />
             </div>
           </>
         )}
 
         {isReplying && (
-          <div style={{ marginBottom: '14px', padding: '10px 12px', background: 'var(--bg-tertiary)', borderRadius: '8px', fontSize: '13px' }}>
-            Replying as <strong>{replyFrom}</strong> → <strong>{replyTo}</strong>
+          <div className="text-[12px] px-2.5 py-2 bg-[var(--bg-secondary)] rounded-xl">
+            Reply as <span className="font-mono text-[var(--accent-sent)]">{replyFrom}</span> → <span className="font-mono text-[var(--accent-sent)]">{replyTo}</span>
           </div>
         )}
 
-        <div style={{ marginBottom: '18px' }}>
-          <div style={{ fontSize: '12px', fontWeight: 500, color: 'var(--text-secondary)', marginBottom: '5px' }}>Message</div>
-          <textarea
-            value={body}
-            onChange={e => setBody(e.target.value)}
-            rows={6}
-            style={{ width: '100%', padding: '12px', borderRadius: '10px', border: '1px solid var(--input-border)', background: 'var(--bg-secondary)', fontSize: '14px', resize: 'vertical' }}
-          />
+        <div>
+          <div className="text-[var(--text-secondary)] text-[11px] mb-1">Message</div>
+          <textarea value={body} onChange={e => setBody(e.target.value)} rows={3} className="textarea" />
         </div>
 
         <button
           onClick={sendSMS}
           disabled={isSending || !body.trim()}
-          style={{
-            width: '100%',
-            padding: '13px 0',
-            background: isSending ? '#475569' : '#10b981',
-            color: 'white',
-            border: 'none',
-            borderRadius: '12px',
-            fontSize: '15px',
-            fontWeight: 600,
-          }}
+          className="btn btn-primary w-full"
         >
-          {isSending ? 'Sending...' : isReplying ? 'Send Reply' : 'Send SMS'}
+          {isSending ? 'Sending…' : isReplying ? 'Reply' : 'Send SMS'}
         </button>
 
-        {lastSent && (
-          <div style={{ marginTop: '12px', fontSize: '12px', color: '#10b981', textAlign: 'center' }}>
-            ✓ {lastSent}
-          </div>
-        )}
+        {lastSent && <div className="text-center text-[var(--accent-success)] text-[12px]">✓ {lastSent}</div>}
       </div>
 
-      <div style={{ padding: '10px 16px', fontSize: '11px', color: 'var(--text-muted)', borderTop: '1px solid var(--border-color)', background: 'var(--bg-secondary)' }}>
-        Messages appear instantly via WebSocket
-      </div>
+      <div className="simulator-footer">Instant via WS</div>
     </div>
   );
 }

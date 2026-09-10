@@ -1,7 +1,10 @@
 import { useState } from 'react';
-import { parsePhoneNumber } from 'libphonenumber-js';
+import { Phone, Search } from 'lucide-react';
 import type { TwilioCall } from '../types';
 import { StatusBadge } from './StatusBadge';
+import { formatListTime, formatPhoneNumber } from '@/lib/format';
+import { ContactAvatar } from './ContactAvatar';
+import { cn } from '@/lib/utils';
 
 interface CallListProps {
   calls: TwilioCall[];
@@ -9,19 +12,6 @@ interface CallListProps {
   onSelectCall: (sid: string) => void;
   isLoading: boolean;
   onNewCall?: () => void;
-}
-
-function formatPhoneNumber(phone: string): string {
-  try {
-    const parsed = parsePhoneNumber(phone, 'US');
-    if (parsed) {
-      return parsed.formatNational();
-    }
-  } catch {}
-  if (phone.length > 6) {
-    return `${phone.slice(0, 3)} ${phone.slice(3, 6)} ${phone.slice(6)}`;
-  }
-  return phone;
 }
 
 export function CallList({
@@ -39,107 +29,55 @@ export function CallList({
     return (
       call.from.toLowerCase().includes(q) ||
       call.to.toLowerCase().includes(q) ||
+      formatPhoneNumber(call.from).toLowerCase().includes(q) ||
+      formatPhoneNumber(call.to).toLowerCase().includes(q) ||
       call.status.toLowerCase().includes(q)
     );
   });
 
-  const formatTime = (dateStr: string) => {
-    const date = new Date(dateStr);
-    const now = new Date();
-    const diff = now.getTime() - date.getTime();
-    const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-
-    if (days === 0) {
-      return date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
-    } else if (days === 1) {
-      return 'Yesterday';
-    } else if (days < 7) {
-      return date.toLocaleDateString('en-US', { weekday: 'short' });
-    } else {
-      return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-    }
-  };
-
   const formatDuration = (d: number | null) => {
     if (d == null) return '';
-    return `${d}s`;
+    const m = Math.floor(d / 60);
+    const s = d % 60;
+    return m > 0 ? `${m}:${s.toString().padStart(2, '0')}` : `${s}s`;
   };
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-      <div
-        style={{
-          padding: '12px 16px',
-          borderBottom: '1px solid var(--border-color)',
-          display: 'flex',
-          gap: '10px',
-          alignItems: 'center',
-        }}
-      >
-        <input
-          type="text"
-          placeholder="Search calls..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          style={{
-            flex: 1,
-            padding: '8px 12px',
-            border: '1px solid var(--input-border)',
-            borderRadius: '8px',
-            fontSize: '14px',
-            outline: 'none',
-            backgroundColor: 'var(--bg-primary)',
-            color: 'var(--text-primary)',
-          }}
-        />
+    <div className="flex flex-col h-full">
+      <div className="imsg-sidebar-title">
+        <h2>Calls</h2>
         <button
-          onClick={() => onNewCall && onNewCall()}
-          style={{
-            padding: '8px 14px',
-            borderRadius: '8px',
-            border: 'none',
-            backgroundColor: '#6366f1',
-            color: 'white',
-            fontSize: '13px',
-            fontWeight: 500,
-            cursor: 'pointer',
-            whiteSpace: 'nowrap',
-          }}
+          type="button"
+          onClick={() => onNewCall?.()}
+          className="imsg-icon-btn"
+          aria-label="New call"
+          title="New call"
         >
-          + New Call
+          <Phone size={17} strokeWidth={2.1} />
         </button>
       </div>
 
-      <div style={{ flex: 1, overflow: 'auto' }}>
+      <div className="imsg-search">
+        <Search size={14} strokeWidth={2.2} />
+        <input
+          type="text"
+          placeholder="Search"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+        />
+      </div>
+
+      <div className="flex-1 overflow-auto">
         {isLoading && calls.length === 0 && (
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              padding: '40px',
-              color: 'var(--text-secondary)',
-            }}
-          >
-            Loading...
+          <div className="flex items-center justify-center py-16 text-[var(--text-secondary)] text-sm">
+            Loading…
           </div>
         )}
 
         {filteredCalls.length === 0 && !isLoading && (
-          <div
-            style={{
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              justifyContent: 'center',
-              padding: '40px',
-              color: 'var(--text-secondary)',
-            }}
-          >
-            <p style={{ margin: 0 }}>No calls yet</p>
-            <p style={{ fontSize: '14px', marginTop: '4px', color: 'var(--text-muted)' }}>
-              Click “New Call” above or use the Twilio SDK
-            </p>
+          <div className="flex flex-col items-center justify-center py-16 px-6 text-center text-[var(--text-secondary)]">
+            <p className="m-0 text-[15px] font-medium text-[var(--text-primary)]">No Calls</p>
+            <p className="text-[13px] mt-1">Start a simulated call or use the Twilio SDK.</p>
           </div>
         )}
 
@@ -147,59 +85,20 @@ export function CallList({
           <div
             key={call.sid}
             onClick={() => onSelectCall(call.sid)}
-            style={{
-              padding: '14px 18px',
-              borderBottom: '1px solid var(--border-color)',
-              cursor: 'pointer',
-              backgroundColor: selectedCallSid === call.sid ? 'var(--selected-bg)' : 'transparent',
-              transition: 'background-color 0.1s ease',
-            }}
+            className={cn('list-row', selectedCallSid === call.sid && 'selected')}
           >
-            <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px' }}>
-              <div
-                style={{
-                  width: '42px',
-                  height: '42px',
-                  borderRadius: '10px',
-                  background: 'linear-gradient(135deg, #6366f1, #8b5cf6)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  color: 'white',
-                  fontSize: '16px',
-                  flexShrink: 0,
-                  boxShadow: '0 1px 2px rgba(0,0,0,0.1)',
-                }}
-              >
-                ☎︎
+            <ContactAvatar phone={call.to} size={44} />
+            <div className="flex-1 min-w-0">
+              <div className="flex items-baseline justify-between gap-2">
+                <span className="imsg-row-name">{formatPhoneNumber(call.to)}</span>
+                <span className="imsg-row-time">{formatListTime(call.date_created)}</span>
               </div>
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    marginBottom: '4px',
-                  }}
-                >
-                  <span style={{ fontSize: '15px', fontWeight: 600, color: 'var(--text-primary)' }}>
-                    {formatPhoneNumber(call.to)}
-                  </span>
-                  <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
-                    {formatTime(call.date_created)}
-                  </span>
-                </div>
-                <div style={{ fontSize: '13px', color: 'var(--text-secondary)', marginBottom: '4px' }}>
-                  from {formatPhoneNumber(call.from)}
-                </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <StatusBadge status={call.status as any} />
-                  {call.duration != null && (
-                    <span style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>
-                      {formatDuration(call.duration)}
-                    </span>
-                  )}
-                </div>
+              <div className="imsg-row-preview flex items-center gap-1.5">
+                <span>from {formatPhoneNumber(call.from)}</span>
+                {call.duration != null && <span>· {formatDuration(call.duration)}</span>}
+              </div>
+              <div className="mt-0.5">
+                <StatusBadge status={call.status} />
               </div>
             </div>
           </div>
