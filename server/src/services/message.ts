@@ -144,12 +144,18 @@ export function deleteMessage(accountSid: string, sid: string): boolean {
 
 export function getMessagesSince(
   accountSid: string,
-  since: string
+  since: string,
+  options: { to?: string } = {}
 ): TwilioMessage[] {
-  const whereClause = accountSid
+  let whereClause = accountSid
     ? 'WHERE account_sid = ? AND updated_at > ?'
     : 'WHERE updated_at > ?';
-  const params = accountSid ? [accountSid, since] : [since];
+  const params: (string | number)[] = accountSid ? [accountSid, since] : [since];
+
+  if (options.to) {
+    whereClause += ' AND "to" LIKE ?';
+    params.push(`%${options.to}%`);
+  }
 
   const rows = db.prepare(`
     SELECT * FROM messages ${whereClause}
@@ -157,4 +163,43 @@ export function getMessagesSince(
   `).all(...params) as MessageRow[];
 
   return rows.map((row) => rowToMessage(row, accountSid || row.account_sid));
+}
+
+export function deleteAllMessages(): number {
+  const result = db.prepare('DELETE FROM messages').run();
+  return result.changes;
+}
+
+/** +1 202-555-0001 — Twilio 21211 (invalid destination). */
+const REJECT_TO_DIGITS = new Set(['12025550001', '2025550001']);
+/** +1 202-555-0009 — Twilio 21614 (not a mobile / cannot receive SMS). */
+const UNDELIVERABLE_TO_DIGITS = new Set(['12025550009', '2025550009']);
+
+export interface MagicToError {
+  code: number;
+  message: string;
+  more_info: string;
+}
+
+/**
+ * Twilio-compatible magic numbers so e2e can exercise 21211 / 21614
+ * without a client-side mock. Digit-normalized; other numbers pass.
+ */
+export function lookupMagicToError(to: string): MagicToError | null {
+  const digits = to.replace(/\D/g, '');
+  if (REJECT_TO_DIGITS.has(digits)) {
+    return {
+      code: 21211,
+      message: `The 'To' number ${to} is not a valid phone number.`,
+      more_info: 'https://www.twilio.com/docs/errors/21211',
+    };
+  }
+  if (UNDELIVERABLE_TO_DIGITS.has(digits)) {
+    return {
+      code: 21614,
+      message: `The 'To' number ${to} is not a valid mobile number.`,
+      more_info: 'https://www.twilio.com/docs/errors/21614',
+    };
+  }
+  return null;
 }

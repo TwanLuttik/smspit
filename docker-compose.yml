@@ -1,5 +1,6 @@
 services:
   api:
+    image: ghcr.io/twanluttik/smspit:1.1.0
     build:
       context: .
       dockerfile: Dockerfile

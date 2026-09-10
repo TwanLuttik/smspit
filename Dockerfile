@@ -41,14 +41,20 @@ ENV NODE_ENV=production
 ENV TWILIO_HOST=0.0.0.0
 ENV TWILIO_PORT=4010
 
-RUN addgroup -g 1001 -S smspit && adduser -S smspit -u 1001
+RUN apk add --no-cache wget \
+  && addgroup -g 1001 -S smspit \
+  && adduser -S smspit -u 1001
 
-COPY --from=server-builder /app/server/dist ./dist
+# pnpm isolates deps under server/node_modules → ../../node_modules/.pnpm
+COPY --from=server-builder /app/package.json /app/pnpm-workspace.yaml ./
 COPY --from=server-builder /app/node_modules ./node_modules
+COPY --from=server-builder /app/server ./server
 
 RUN mkdir -p /app/data && chown -R smspit:smspit /app
 
 USER smspit
+
+WORKDIR /app/server
 
 EXPOSE 4010
 

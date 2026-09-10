@@ -1,8 +1,9 @@
 import type { FastifyInstance } from 'fastify';
-import { listMessages, getMessagesSince } from '../services/message.js';
+import { listMessages, getMessagesSince, deleteAllMessages } from '../services/message.js';
 
-interface PollQuery {
+interface MessagesQuery {
   lastPoll?: string;
+  to?: string;
 }
 
 export async function healthRoutes(fastify: FastifyInstance): Promise<void> {
@@ -11,12 +12,12 @@ export async function healthRoutes(fastify: FastifyInstance): Promise<void> {
   });
 
   fastify.get<{
-    Querystring: PollQuery;
+    Querystring: MessagesQuery;
   }>('/api/messages', async (request, reply) => {
-    const { lastPoll } = request.query;
+    const { lastPoll, to } = request.query;
 
     if (lastPoll) {
-      const messages = getMessagesSince('', lastPoll);
+      const messages = getMessagesSince('', lastPoll, { to });
       return reply.send({
         messages,
         timestamp: new Date().toISOString(),
@@ -24,12 +25,17 @@ export async function healthRoutes(fastify: FastifyInstance): Promise<void> {
       });
     }
 
-    const result = listMessages('', { page: 1, pageSize: 100 });
+    const result = listMessages('', { page: 1, pageSize: 100, to });
     return reply.send({
       messages: result.messages,
       total: result.total,
       timestamp: new Date().toISOString(),
       isPolling: false,
     });
+  });
+
+  fastify.delete('/api/messages', async (_, reply) => {
+    const deleted = deleteAllMessages();
+    return reply.send({ deleted });
   });
 }

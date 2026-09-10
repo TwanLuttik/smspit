@@ -51,7 +51,7 @@ async function start() {
     fastify.get('/', async (_, reply) => {
       return reply.send({
         name: 'SMSPit',
-        version: '1.0.0',
+        version: '1.1.0',
         description: 'Mock Twilio SMS & Voice Server',
         api_version: '2010-04-01',
         prefix: '/2010-04-01',

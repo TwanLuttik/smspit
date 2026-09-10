@@ -26,7 +26,7 @@ pnpm --filter @smspit/server test
 pnpm --filter @smspit/server test:cov   # with coverage
 ```
 
-Docker: `docker-compose up --build` (web UI served at /web from the API container).
+Docker: `docker compose up` pulls `ghcr.io/twanluttik/smspit:1.1.0`. Use `--build` to rebuild locally. Image is published from `.github/workflows/publish-image.yml` on push to `main`.
 
 Environment variables (see README):
 - `TWILIO_HOST`, `TWILIO_PORT` (default 4010)
@@ -42,7 +42,7 @@ Environment variables (see README):
   - For tests you can set `process.env.DB_PATH = ':memory:'` (or a temp file) **before** importing modules that pull in `db`.
 - `services/message.ts` + `services/call.ts`: Core business logic.
   - SID generation is custom (SM + 32 hex chars, CA + 32 hex). Not nanoid.
-  - Message: auto `delivered`, segments calculated (160/153 rule).
+  - Message: auto `delivered`, segments calculated (160/153 rule). Magic To numbers `2025550001` / `2025550009` reject with Twilio 21211 / 21614 (no row stored).
   - Call: starts as `ringing`, duration calculated on terminal status transitions in `updateCallStatus`.
   - `recordDtmf` appends digits (used by simulator).
   - `get*Since` used by the internal polling fallback + WS initial load.
@@ -50,6 +50,7 @@ Environment variables (see README):
   - Full Twilio-style error responses (status + code + more_info links).
   - Validation for required params (To/From/Body or Twiml/Url etc.).
   - Internal `/api/messages` and `/api/calls` support `?lastPoll=...` for polling clients.
+  - `GET /api/messages?to=` filters the inbox. `DELETE /api/messages` purges all messages (`{ deleted }`).
   - Call update POST accepts limited terminal + in-progress statuses.
 - `ws.ts`: Simple in-memory Set of sockets. Broadcast helpers. Registers the `/ws` route.
 - `types/index.ts`: Source of truth for Twilio* shapes, Create*Input, row types, status unions. Web also has a slimmed `web/src/types`.

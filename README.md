@@ -32,11 +32,39 @@ Individual scripts are also available:
 
 ### Docker
 
+Published image: `ghcr.io/twanluttik/smspit:1.1.0` (also tagged `latest` on `main`).
+
 ```bash
-docker-compose up --build
+docker compose up
 ```
 
-Access the web UI at http://localhost:4010/web
+Until that tag exists on GHCR, build locally:
+
+```bash
+docker compose up --build
+```
+
+Or from another compose file (e2e / CI):
+
+```yaml
+smspit:
+  image: ghcr.io/twanluttik/smspit:1.1.0
+  ports:
+    - "4010:4010"
+  healthcheck:
+    test: ["CMD", "wget", "-q", "--spider", "http://localhost:4010/health"]
+```
+
+Temporary fallback before the image is public:
+
+```yaml
+smspit:
+  build: https://github.com/TwanLuttik/smspit.git
+  ports:
+    - "4010:4010"
+```
+
+Access the API at http://localhost:4010 and the standalone web UI at http://localhost:4011
 
 ## Usage
 
@@ -94,16 +122,30 @@ await client.calls.create({
 | `GET` | `/2010-04-01/Accounts/:accountSid/Calls.json` | List calls |
 | `GET` | `/2010-04-01/Accounts/:accountSid/Calls/:sid.json` | Get call |
 
-### Internal API (Web UI)
+### Internal API (Web UI / e2e)
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| `GET` | `/api/messages` | List all messages |
-| `GET` | `/api/messages` | List messages (initial load) |
-| `GET` | `/api/calls` | List calls (initial load) |
+| `GET` | `/api/messages` | List messages (optional `?to=` and `?lastPoll=`) |
+| `DELETE` | `/api/messages` | Purge all messages (`{ deleted: N }`) |
+| `GET` | `/api/calls` | List calls (initial load / `?lastPoll=`) |
 | `WS`  | `/ws` | Real-time push of new messages & calls |
 | `GET` | `/health` | Health check |
-| `GET` | `/web` | Web UI |
+
+`GET /api/messages?to=` filters the inbox the same way Twilio `To=` does (substring match on the stored number). Use this from Playwright / poll helpers; the Twilio list path already accepted `To=`.
+
+`DELETE /api/messages` is the Mailpit-style inbox reset.
+
+### Magic numbers (Twilio error codes)
+
+These destination numbers are rejected on `POST .../Messages.json` so e2e can drop a client-side Twilio mock:
+
+| To (any common formatting) | HTTP | Code | Meaning |
+|----------------------------|------|------|---------|
+| `+1 202-555-0001` | 400 | `21211` | Invalid destination |
+| `+1 202-555-0009` | 400 | `21614` | Not a mobile / cannot receive SMS |
+
+No message row is stored. Other numbers still auto-`delivered`.
 
 ## Project Structure
 

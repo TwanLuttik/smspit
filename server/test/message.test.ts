@@ -4,7 +4,7 @@ import { beforeAll, afterAll, beforeEach, describe, it, expect } from 'vitest';
 process.env.DB_PATH = ':memory:';
 
 import { initDatabase, closeDatabase, db } from '../src/db.js';
-import { createMessage, listMessages, getMessage, deleteMessage, getMessagesSince } from '../src/services/message.js';
+import { createMessage, listMessages, getMessage, deleteMessage, getMessagesSince, deleteAllMessages, lookupMagicToError } from '../src/services/message.js';
 
 describe('message service', () => {
   beforeAll(() => {
@@ -89,5 +89,34 @@ describe('message service', () => {
     createMessage('ACt', { To: '+a', From: '+b', Body: 'recent' });
     const recent = getMessagesSince('ACt', before);
     expect(recent.length).toBe(1);
+  });
+
+  it('getMessagesSince filters by to', async () => {
+    const before = new Date().toISOString();
+    await new Promise(r => setTimeout(r, 2));
+    createMessage('ACt', { To: '+15550001111', From: '+b', Body: 'keep' });
+    createMessage('ACt', { To: '+15550002222', From: '+b', Body: 'skip' });
+    const filtered = getMessagesSince('ACt', before, { to: '0001111' });
+    expect(filtered.length).toBe(1);
+    expect(filtered[0].body).toBe('keep');
+  });
+
+  it('deleteAllMessages purges the inbox', () => {
+    createMessage('AC1', { To: '+1', From: '+2', Body: 'one' });
+    createMessage('AC2', { To: '+3', From: '+4', Body: 'two' });
+    expect(deleteAllMessages()).toBe(2);
+    expect(listMessages('').total).toBe(0);
+    expect(deleteAllMessages()).toBe(0);
+  });
+
+  it('lookupMagicToError maps 21211 / 21614 and ignores other numbers', () => {
+    const invalid = lookupMagicToError('+1 202-555-0001');
+    expect(invalid?.code).toBe(21211);
+    expect(invalid?.message).toContain('+1 202-555-0001');
+
+    const undeliverable = lookupMagicToError('2025550009');
+    expect(undeliverable?.code).toBe(21614);
+
+    expect(lookupMagicToError('+15551234567')).toBeNull();
   });
 });

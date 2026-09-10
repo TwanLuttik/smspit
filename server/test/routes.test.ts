@@ -144,6 +144,66 @@ describe('API routes (messages + calls + health)', () => {
     expect(msgs.statusCode).toBe(200);
   });
 
+  it('GET /api/messages?to= filters the inbox', async () => {
+    await app.inject({
+      method: 'POST',
+      url: '/2010-04-01/Accounts/ACr/Messages.json',
+      headers: { 'content-type': 'application/x-www-form-urlencoded' },
+      payload: 'From=%2B1&To=%2B15550001111&Body=keep',
+    });
+    await app.inject({
+      method: 'POST',
+      url: '/2010-04-01/Accounts/ACr/Messages.json',
+      headers: { 'content-type': 'application/x-www-form-urlencoded' },
+      payload: 'From=%2B1&To=%2B15550002222&Body=skip',
+    });
+
+    const filtered = await app.inject({ method: 'GET', url: '/api/messages?to=%2B15550001111' });
+    expect(filtered.statusCode).toBe(200);
+    const body = JSON.parse(filtered.body);
+    expect(body.total).toBe(1);
+    expect(body.messages[0].body).toBe('keep');
+  });
+
+  it('DELETE /api/messages purges the inbox', async () => {
+    await app.inject({
+      method: 'POST',
+      url: '/2010-04-01/Accounts/ACr/Messages.json',
+      headers: { 'content-type': 'application/x-www-form-urlencoded' },
+      payload: 'From=%2B1&To=%2B2&Body=purge-me',
+    });
+
+    const del = await app.inject({ method: 'DELETE', url: '/api/messages' });
+    expect(del.statusCode).toBe(200);
+    expect(JSON.parse(del.body).deleted).toBe(1);
+
+    const list = await app.inject({ method: 'GET', url: '/api/messages' });
+    expect(JSON.parse(list.body).total).toBe(0);
+  });
+
+  it('POST Messages.json rejects magic To numbers with 21211 / 21614', async () => {
+    const invalid = await app.inject({
+      method: 'POST',
+      url: '/2010-04-01/Accounts/ACr/Messages.json',
+      headers: { 'content-type': 'application/x-www-form-urlencoded' },
+      payload: new URLSearchParams({ From: '+1', To: '+12025550001', Body: 'nope' }).toString(),
+    });
+    expect(invalid.statusCode).toBe(400);
+    expect(JSON.parse(invalid.body).code).toBe(21211);
+
+    const undeliverable = await app.inject({
+      method: 'POST',
+      url: '/2010-04-01/Accounts/ACr/Messages.json',
+      headers: { 'content-type': 'application/x-www-form-urlencoded' },
+      payload: new URLSearchParams({ From: '+1', To: '2025550009', Body: 'nope' }).toString(),
+    });
+    expect(undeliverable.statusCode).toBe(400);
+    expect(JSON.parse(undeliverable.body).code).toBe(21614);
+
+    const leftover = await app.inject({ method: 'GET', url: '/api/messages' });
+    expect(JSON.parse(leftover.body).total).toBe(0);
+  });
+
   it('covers not-found, lastPoll, invalid call status update', async () => {
     // message 404
     const nf = await app.inject({ method: 'GET', url: '/2010-04-01/Accounts/ACx/Messages/SMdoesnotexist.json' });
@@ -175,5 +235,17 @@ describe('API routes (messages + calls + health)', () => {
     expect(pollMsg.statusCode).toBe(200);
     const pollCall = await app.inject({ method: 'GET', url: '/api/calls?lastPoll=2020-01-01T00:00:00.000Z' });
     expect(pollCall.statusCode).toBe(200);
+
+    await app.inject({
+      method: 'POST',
+      url: '/2010-04-01/Accounts/ACx/Messages.json',
+      headers: { 'content-type': 'application/x-www-form-urlencoded' },
+      payload: 'From=%2B1&To=%2B15550001111&Body=poll-keep',
+    });
+    const pollTo = await app.inject({
+      method: 'GET',
+      url: '/api/messages?lastPoll=2020-01-01T00:00:00.000Z&to=%2B15550001111',
+    });
+    expect(JSON.parse(pollTo.body).messages.length).toBe(1);
   });
 });

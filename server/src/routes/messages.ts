@@ -1,5 +1,5 @@
 import type { FastifyInstance, FastifyRequest } from 'fastify';
-import { createMessage, listMessages, getMessage, deleteMessage } from '../services/message.js';
+import { createMessage, listMessages, getMessage, deleteMessage, lookupMagicToError } from '../services/message.js';
 import type { CreateMessageInput } from '../types/index.js';
 import { broadcastNewMessage } from '../ws.js';
 
@@ -40,6 +40,16 @@ export async function messagesRoutes(fastify: FastifyInstance): Promise<void> {
         message: 'Missing required parameter: Body, MediaUrl, or ContentSid',
         code: 21201,
         more_info: 'https://www.twilio.com/docs/errors/21201',
+      });
+    }
+
+    const magicError = lookupMagicToError(input.To);
+    if (magicError) {
+      return reply.status(400).send({
+        status: 400,
+        message: magicError.message,
+        code: magicError.code,
+        more_info: magicError.more_info,
       });
     }
 
