@@ -3,7 +3,10 @@ import { Search, SquarePen } from 'lucide-react';
 import type { TwilioMessage } from '../types';
 import { formatListTime, formatPhoneNumber } from '@/lib/format';
 import { conversationKey, conversationParties, isFromLocal } from '@/lib/conversation';
+import { messageChannel } from '@/lib/channel';
+import { messageText } from '@/lib/message-text';
 import { ContactAvatar } from './ContactAvatar';
+import { WhatsAppMark } from './WhatsAppMark';
 import { cn } from '@/lib/utils';
 
 interface MessageListProps {
@@ -36,7 +39,8 @@ export function MessageList({
       if (!search) return true;
       const q = search.toLowerCase();
       return (
-        msg.body.toLowerCase().includes(q) ||
+        messageText(msg).toLowerCase().includes(q) ||
+        (msg.content_sid || '').toLowerCase().includes(q) ||
         msg.from.includes(search) ||
         msg.to.includes(search) ||
         formatPhoneNumber(msg.from).toLowerCase().includes(q) ||
@@ -122,7 +126,14 @@ export function MessageList({
               onClick={() => onSelectConversation(conv.key)}
               className={cn('list-row', selectedConversationKey === conv.key && 'selected')}
             >
-              <ContactAvatar phone={conv.phoneNumber} size={44} />
+              <div className="avatar-wrap">
+                <ContactAvatar phone={conv.phoneNumber} size={44} />
+                {messageChannel(conv.lastMessage) === 'whatsapp' && (
+                  <span className="channel-badge" title="WhatsApp">
+                    <WhatsAppMark size={16} />
+                  </span>
+                )}
+              </div>
               <div className="flex-1 min-w-0">
                 <div className="flex items-baseline justify-between gap-2">
                   <span className="imsg-row-name">{formatPhoneNumber(conv.phoneNumber)}</span>
@@ -130,7 +141,7 @@ export function MessageList({
                 </div>
                 <div className="imsg-row-preview">
                   {previewPrefix}
-                  {conv.lastMessage.body}
+                  {messageText(conv.lastMessage)}
                 </div>
               </div>
             </div>

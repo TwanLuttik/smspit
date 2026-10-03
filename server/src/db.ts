@@ -30,6 +30,9 @@ export function initDatabase(): void {
       price REAL,
       price_unit TEXT,
       messaging_service_sid TEXT,
+      content_sid TEXT,
+      content_variables TEXT,
+      media_url TEXT,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
       sent_at DATETIME,
       updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
@@ -75,6 +78,15 @@ export function initDatabase(): void {
     db.exec(`ALTER TABLE calls ADD COLUMN digits TEXT DEFAULT ''`);
   } catch (e) {
     // Column already exists — ignore the error
+  }
+
+  // WhatsApp content templates send ContentSid / ContentVariables instead of Body.
+  for (const column of ['content_sid TEXT', 'content_variables TEXT', 'media_url TEXT']) {
+    try {
+      db.exec(`ALTER TABLE messages ADD COLUMN ${column}`);
+    } catch (e) {
+      // Column already exists — ignore the error
+    }
   }
 
   console.log('Database initialized');

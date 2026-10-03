@@ -88,6 +88,26 @@ await client.messages.create({
 });
 ```
 
+WhatsApp uses the same Messages API. Prefix both numbers with `whatsapp:` (Twilio's channel address). A mixed SMS/WhatsApp pair is rejected with error `21910`.
+
+Template sends omit `Body` and pass `ContentSid` plus `ContentVariables` instead. SMSPit stores both and shows the variable values in the thread. A `MediaUrl` is stored and linked from the bubble.
+
+```javascript
+await client.messages.create({
+  body: 'Hello on WhatsApp',
+  from: 'whatsapp:+14155238886',
+  to: 'whatsapp:+15005550006',
+});
+```
+
+To simulate a message a handset sends you, `POST /api/messages` with `Channel=whatsapp`. That stores an inbound message (`direction: inbound`, `status: received`) and pushes it over the WebSocket. The sidebar shows the WhatsApp mark on that conversation.
+
+```bash
+curl -X POST http://localhost:4010/api/messages \
+  -H 'Content-Type: application/json' \
+  -d '{"From":"+15005550006","To":"+14155238886","Body":"hi","Channel":"whatsapp"}'
+```
+
 You can also create voice calls:
 
 ```javascript
@@ -127,6 +147,7 @@ await client.calls.create({
 | Method | Endpoint | Description |
 |--------|----------|-------------|
 | `GET` | `/api/messages` | List messages (optional `?to=` and `?lastPoll=`) |
+| `POST` | `/api/messages` | Receive an inbound message (`From`, `To`, `Body`, optional `Channel=sms\|whatsapp`) |
 | `DELETE` | `/api/messages` | Purge all messages (`{ deleted: N }`) |
 | `GET` | `/api/calls` | List calls (initial load / `?lastPoll=`) |
 | `WS`  | `/ws` | Real-time push of new messages & calls |
@@ -146,6 +167,8 @@ These destination numbers are rejected on `POST .../Messages.json` so e2e can dr
 | `+1 202-555-0009` | 400 | `21614` | Not a mobile / cannot receive SMS |
 
 No message row is stored. Other numbers still auto-`delivered`.
+
+`From` and `To` must be the same channel. SMS uses E.164 (`+15551234567`). WhatsApp uses `whatsapp:+15551234567`. A mismatch returns `21910` and stores nothing. The `whatsapp:` prefix is matched case-insensitively and stored in lowercase.
 
 ## Project Structure
 

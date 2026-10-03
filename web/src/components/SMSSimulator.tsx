@@ -1,4 +1,7 @@
 import { useState } from 'react';
+import { applyChannelPrefix, messageChannel, type MessageChannel } from '@/lib/channel';
+import { WhatsAppMark } from './WhatsAppMark';
+import { cn } from '@/lib/utils';
 
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:4010';
 
@@ -6,59 +9,81 @@ interface Props {
   isOpen: boolean;
   onClose: () => void;
   selectedConversationKey?: string | null;
+  localNumber?: string | null;
+  remoteNumber?: string | null;
   floating?: boolean;
 }
 
-export function SMSSimulator({ isOpen, onClose, selectedConversationKey, floating }: Props) {
+export function SMSSimulator({
+  isOpen,
+  onClose,
+  selectedConversationKey,
+  localNumber,
+  remoteNumber,
+  floating,
+}: Props) {
   const [from, setFrom] = useState('+15551234567');
   const [to, setTo] = useState('+15559876543');
   const [body, setBody] = useState('Hello! This is a test message from SMSPit.');
+  const [channel, setChannel] = useState<MessageChannel>('sms');
+  const [inbound, setInbound] = useState(false);
   const [isSending, setIsSending] = useState(false);
   const [lastSent, setLastSent] = useState<string | null>(null);
 
-  // If a conversation is selected, offer to reply as the other party
-  const isReplying = !!selectedConversationKey;
-  let replyFrom = from;
-  let replyTo = to;
+  const isReplying = !!selectedConversationKey && !!localNumber && !!remoteNumber;
+  const activeChannel: MessageChannel = isReplying
+    ? messageChannel({ from: localNumber ?? '', to: remoteNumber ?? '' })
+    : channel;
+  // A reply is the other party texting back, so it is stored as inbound.
+  const receive = isReplying || inbound;
 
-  if (isReplying) {
-    const [convFrom, convTo] = selectedConversationKey.split('-');
-    // When replying in a conversation, we simulate the recipient replying
-    replyFrom = convTo;
-    replyTo = convFrom;
-  }
+  const actualFromInput = isReplying ? (remoteNumber ?? '') : from;
+  const actualToInput = isReplying ? (localNumber ?? '') : to;
 
   const sendSMS = async () => {
     setIsSending(true);
     try {
-      const actualFrom = isReplying ? replyFrom : from;
-      const actualTo = isReplying ? replyTo : to;
+      const actualFrom = applyChannelPrefix(actualFromInput, activeChannel);
+      const actualTo = applyChannelPrefix(actualToInput, activeChannel);
 
-      const res = await fetch(`${API_BASE}/2010-04-01/Accounts/ACdemo/Messages.json`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: new URLSearchParams({
-          From: actualFrom,
-          To: actualTo,
-          Body: body,
-        }).toString(),
-      });
+      const res = receive
+        ? await fetch(`${API_BASE}/api/messages`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              From: actualFrom,
+              To: actualTo,
+              Body: body,
+              Channel: activeChannel,
+            }),
+          })
+        : await fetch(`${API_BASE}/2010-04-01/Accounts/ACdemo/Messages.json`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: new URLSearchParams({
+              From: actualFrom,
+              To: actualTo,
+              Body: body,
+            }).toString(),
+          });
 
       if (res.ok) {
-        setLastSent(`Sent to ${actualTo}`);
+        setLastSent(receive ? `Received from ${actualFrom}` : `Sent to ${actualTo}`);
         setBody('');
-        // Auto-clear success message
         setTimeout(() => setLastSent(null), 2000);
       } else {
         const err = await res.json();
-        alert(err.message || 'Failed to send SMS');
+        alert(err.message || 'Failed to send message');
       }
-    } catch (e) {
+    } catch {
       alert('Could not reach SMSPit server');
     } finally {
       setIsSending(false);
     }
   };
+
+  const channelLabel = activeChannel === 'whatsapp' ? 'WhatsApp' : 'SMS';
+  const actionLabel = receive ? `Receive ${channelLabel}` : `Send ${channelLabel}`;
 
   if (!isOpen) return null;
 
@@ -68,16 +93,60 @@ export function SMSSimulator({ isOpen, onClose, selectedConversationKey, floatin
     <div className={isFloating ? "fixed right-3 bottom-3 z-[200] w-[280px] flex-shrink-0 shadow-xl border border-[var(--border-color)] rounded-2xl overflow-hidden bg-[var(--bg-sidebar)] flex flex-col text-sm" : "simulator"}>
       <div className="simulator-header">
         <div className="flex items-center gap-2">
-          <div className="w-6 h-6 rounded-full bg-[var(--accent-sent)] flex items-center justify-center text-[11px] text-white">💬</div>
+          {activeChannel === 'whatsapp' ? (
+            <WhatsAppMark size={22} />
+          ) : (
+            <div className="w-6 h-6 rounded-full bg-[var(--accent-sent)] flex items-center justify-center text-[11px] text-white">💬</div>
+          )}
           <div>
-            <div className="font-medium leading-none">SMS</div>
-            <div className="text-[11px] text-[var(--text-secondary)] mt-0.5">{isReplying ? 'Reply' : 'Test send'}</div>
+            <div className="font-medium leading-none">{channelLabel}</div>
+            <div className="text-[11px] text-[var(--text-secondary)] mt-0.5">
+              {isReplying ? 'Reply' : receive ? 'Inbound' : 'Test send'}
+            </div>
           </div>
         </div>
         <button onClick={onClose} className="imsg-icon-btn text-[var(--text-secondary)]">×</button>
       </div>
 
       <div className="simulator-body space-y-3">
+        {!isReplying && (
+          <div className="space-y-2">
+            <div className="imsg-tabs w-full">
+              <button
+                type="button"
+                className={cn('flex-1', channel === 'sms' && 'active')}
+                onClick={() => setChannel('sms')}
+              >
+                SMS
+              </button>
+              <button
+                type="button"
+                className={cn('flex-1 inline-flex items-center justify-center gap-1', channel === 'whatsapp' && 'active')}
+                onClick={() => setChannel('whatsapp')}
+              >
+                <WhatsAppMark size={14} />
+                WhatsApp
+              </button>
+            </div>
+            <div className="imsg-tabs w-full">
+              <button
+                type="button"
+                className={cn('flex-1', !inbound && 'active')}
+                onClick={() => setInbound(false)}
+              >
+                Send
+              </button>
+              <button
+                type="button"
+                className={cn('flex-1', inbound && 'active')}
+                onClick={() => setInbound(true)}
+              >
+                Receive
+              </button>
+            </div>
+          </div>
+        )}
+
         {!isReplying && (
           <>
             <div>
@@ -93,7 +162,7 @@ export function SMSSimulator({ isOpen, onClose, selectedConversationKey, floatin
 
         {isReplying && (
           <div className="text-[12px] px-2.5 py-2 bg-[var(--bg-secondary)] rounded-xl">
-            Reply as <span className="font-mono text-[var(--accent-sent)]">{replyFrom}</span> → <span className="font-mono text-[var(--accent-sent)]">{replyTo}</span>
+            Reply as <span className="font-mono text-[var(--accent-sent)]">{actualFromInput}</span> → <span className="font-mono text-[var(--accent-sent)]">{actualToInput}</span>
           </div>
         )}
 
@@ -107,7 +176,7 @@ export function SMSSimulator({ isOpen, onClose, selectedConversationKey, floatin
           disabled={isSending || !body.trim()}
           className="btn btn-primary w-full"
         >
-          {isSending ? 'Sending…' : isReplying ? 'Reply' : 'Send SMS'}
+          {isSending ? 'Sending…' : isReplying ? `Reply on ${channelLabel}` : actionLabel}
         </button>
 
         {lastSent && <div className="text-center text-[var(--accent-success)] text-[12px]">✓ {lastSent}</div>}

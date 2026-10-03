@@ -16,6 +16,41 @@ function generateSid(): string {
   return sid;
 }
 
+export type MessageChannel = 'sms' | 'whatsapp';
+
+const WHATSAPP_PREFIX = /^whatsapp:/i;
+
+export function channelOfAddress(address: string): MessageChannel {
+  return WHATSAPP_PREFIX.test(address.trim()) ? 'whatsapp' : 'sms';
+}
+
+/** Store Twilio channel addresses with a lowercase `whatsapp:` prefix, or as a plain number. */
+export function normalizeAddress(address: string, channel: MessageChannel): string {
+  const stripped = address.trim().replace(WHATSAPP_PREFIX, '');
+  return channel === 'whatsapp' ? `whatsapp:${stripped}` : stripped;
+}
+
+/**
+ * Twilio 21910 — From and To must use the same channel
+ * (`+E.164` for SMS, `whatsapp:+E.164` for WhatsApp).
+ */
+export function lookupChannelPairError(from: string, to: string): MagicToError | null {
+  if (!from.trim() || channelOfAddress(from) === channelOfAddress(to)) return null;
+  return {
+    code: 21910,
+    message: 'Invalid From and To pair. From and To should be of the same channel.',
+    more_info: 'https://www.twilio.com/docs/api/errors/21910',
+  };
+}
+
+function numSegmentsFor(body: string, channel: MessageChannel): number {
+  const length = body.length;
+  if (channel === 'whatsapp') {
+    return length <= 1600 ? 1 : Math.ceil(length / 1600);
+  }
+  return length <= 160 ? 1 : Math.ceil(length / 153);
+}
+
 function rowToMessage(row: MessageRow, accountSid: string): TwilioMessage {
   return {
     sid: row.sid,
@@ -32,6 +67,9 @@ function rowToMessage(row: MessageRow, accountSid: string): TwilioMessage {
     price: row.price,
     price_unit: row.price_unit,
     messaging_service_sid: row.messaging_service_sid,
+    content_sid: row.content_sid,
+    content_variables: row.content_variables,
+    media_url: row.media_url,
     date_created: row.created_at,
     date_sent: row.sent_at,
     date_updated: row.updated_at,
@@ -43,32 +81,54 @@ function rowToMessage(row: MessageRow, accountSid: string): TwilioMessage {
   };
 }
 
+export interface CreateMessageOptions {
+  direction?: TwilioMessage['direction'];
+  status?: MessageStatus;
+}
+
 export function createMessage(
   accountSid: string,
-  input: CreateMessageInput
+  input: CreateMessageInput,
+  options: CreateMessageOptions = {}
 ): TwilioMessage {
   const sid = generateSid();
   const now = new Date().toISOString();
 
-  const bodyLength = (input.Body || '').length;
-  const numSegments = bodyLength <= 160 ? 1 : Math.ceil(bodyLength / 153);
+  const fromRaw = (input.From || '').trim();
+  const toRaw = input.To.trim();
+  const fromChannel = fromRaw ? channelOfAddress(fromRaw) : channelOfAddress(toRaw);
+  const toChannel = channelOfAddress(toRaw);
+  const channel: MessageChannel =
+    toChannel === 'whatsapp' && (!fromRaw || fromChannel === 'whatsapp') ? 'whatsapp' : 'sms';
+  const body = (input.Body || '').trim();
+  const contentSid = (input.ContentSid || '').trim() || null;
+  const contentVariables = (input.ContentVariables || '').trim() || null;
+  const mediaUrl = (input.MediaUrl || '').trim() || null;
+  const status = options.status ?? 'delivered';
+  const direction = options.direction ?? 'outbound-api';
 
   const stmt = db.prepare(`
     INSERT INTO messages (
       sid, account_sid, body, "from", "to", status, num_segments,
-      num_media, direction, messaging_service_sid, created_at,
-      sent_at, updated_at
-    ) VALUES (?, ?, ?, ?, ?, 'delivered', ?, 0, 'outbound-api', ?, ?, ?, ?)
+      num_media, direction, messaging_service_sid, content_sid,
+      content_variables, media_url, created_at, sent_at, updated_at
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `);
 
   stmt.run(
     sid,
     accountSid,
-    (input.Body || '').trim(),
-    (input.From || '').trim(),
-    input.To.trim(),
-    numSegments,
+    body,
+    fromRaw ? normalizeAddress(fromRaw, fromChannel) : '',
+    normalizeAddress(toRaw, toChannel),
+    status,
+    numSegmentsFor(body, channel),
+    mediaUrl ? 1 : 0,
+    direction,
     input.MessagingServiceSid || null,
+    contentSid,
+    contentVariables,
+    mediaUrl,
     now,
     now,
     now
@@ -112,8 +172,8 @@ export function listMessages(
   }
 
   if (options.bodySearch) {
-    whereClause += ' AND body LIKE ?';
-    params.push(`%${options.bodySearch}%`);
+    whereClause += ' AND (body LIKE ? OR content_variables LIKE ? OR content_sid LIKE ?)';
+    params.push(`%${options.bodySearch}%`, `%${options.bodySearch}%`, `%${options.bodySearch}%`);
   }
 
   const countStmt = db.prepare(`SELECT COUNT(*) as total FROM messages ${whereClause}`);

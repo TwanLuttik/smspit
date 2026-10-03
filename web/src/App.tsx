@@ -29,10 +29,12 @@ function App() {
       .sort((a, b) => new Date(a.date_created).getTime() - new Date(b.date_created).getTime());
   }, [messages, selectedConversationKey]);
 
-  const selectedPhoneNumber = useMemo(() => {
+  const selectedParties = useMemo(() => {
     if (!selectedConversationKey || selectedMessages.length === 0) return null;
-    return conversationParties(selectedMessages).remote;
+    return conversationParties(selectedMessages);
   }, [selectedConversationKey, selectedMessages]);
+
+  const selectedPhoneNumber = selectedParties?.remote ?? null;
 
   const selectedCall = useMemo(() => {
     return calls.find((c) => c.sid === selectedCallSid) || null;
@@ -121,6 +123,8 @@ function App() {
               isOpen={true}
               onClose={() => setShowCreateSMS(false)}
               selectedConversationKey={selectedConversationKey}
+              localNumber={selectedParties?.local ?? null}
+              remoteNumber={selectedParties?.remote ?? null}
               floating={false}
             />
           )}

@@ -3,7 +3,10 @@ import { ArrowUp, MessageCircle, X } from 'lucide-react';
 import type { MessageStatus, TwilioMessage } from '../types';
 import { formatPhoneNumber, formatThreadStamp } from '@/lib/format';
 import { conversationParties, isFromLocal } from '@/lib/conversation';
+import { messageChannel } from '@/lib/channel';
+import { messageText } from '@/lib/message-text';
 import { ContactAvatar } from './ContactAvatar';
+import { WhatsAppMark } from './WhatsAppMark';
 import { cn } from '@/lib/utils';
 
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:4010';
@@ -124,6 +127,7 @@ export function MessageDetail({ messages, phoneNumber, onClose }: MessageDetailP
 
   const last = items[items.length - 1];
   const lastReceipt = last?.sent ? receiptLabel(last.msg.status) : null;
+  const isWhatsApp = messages.some((msg) => messageChannel(msg) === 'whatsapp');
 
   return (
     <div className="flex flex-col h-full bg-[var(--bg-thread)]">
@@ -136,10 +140,18 @@ export function MessageDetail({ messages, phoneNumber, onClose }: MessageDetailP
         >
           <X size={16} />
         </button>
-        <ContactAvatar phone={phoneNumber} size={40} />
+        <div className="avatar-wrap">
+          <ContactAvatar phone={phoneNumber} size={40} />
+          {isWhatsApp && (
+            <span className="channel-badge" title="WhatsApp">
+              <WhatsAppMark size={16} />
+            </span>
+          )}
+        </div>
         <div className="text-center">
           <div className="imsg-thread-name">{formatPhoneNumber(phoneNumber)}</div>
           <div className="imsg-thread-sub">
+            {isWhatsApp ? 'WhatsApp · ' : ''}
             {messages.length} {messages.length === 1 ? 'message' : 'messages'}
           </div>
         </div>
@@ -162,7 +174,17 @@ export function MessageDetail({ messages, phoneNumber, onClose }: MessageDetailP
                   groupedNext && 'grouped-next',
                 )}
               >
-                {parseLinks(msg.body)}
+                {parseLinks(messageText(msg))}
+                {!msg.body.trim() && msg.content_sid && (msg.content_variables || '').trim() && (
+                  <div className="mt-1 text-[11px] opacity-70">Template {msg.content_sid}</div>
+                )}
+                {msg.media_url && (msg.body.trim() || (msg.content_variables || '').trim()) && (
+                  <div className="mt-1">
+                    <a href={msg.media_url} target="_blank" rel="noopener noreferrer">
+                      {msg.media_url}
+                    </a>
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -188,7 +210,7 @@ export function MessageDetail({ messages, phoneNumber, onClose }: MessageDetailP
           <textarea
             value={draft}
             rows={1}
-            placeholder="iMessage"
+            placeholder={isWhatsApp ? 'WhatsApp' : 'iMessage'}
             onChange={(e) => setDraft(e.target.value)}
             onKeyDown={(e) => {
               if (e.key === 'Enter' && !e.shiftKey) {

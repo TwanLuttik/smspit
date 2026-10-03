@@ -1,6 +1,7 @@
 import { parsePhoneNumber } from 'libphonenumber-js';
 
 export function formatPhoneNumber(phone: string): string {
+  phone = phone.replace(/^whatsapp:/i, '');
   try {
     const parsed = parsePhoneNumber(phone, 'US');
     if (parsed) return parsed.formatNational();

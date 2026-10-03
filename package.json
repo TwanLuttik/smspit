@@ -9,10 +9,10 @@
     "web"
   ],
   "scripts": {
-    "dev": "pnpm -r --parallel dev",
-    "dev:server": "pnpm --filter @smspit/server dev",
-    "dev:web": "pnpm --filter @smspit/web dev",
-    "build": "pnpm -r build",
-    "start": "pnpm --filter @smspit/server start"
+    "dev": "bun run --workspaces --parallel dev",
+    "dev:server": "bun run --filter @smspit/server dev",
+    "dev:web": "bun run --filter @smspit/web dev",
+    "build": "bun run --workspaces build",
+    "start": "bun run --filter @smspit/server start"
   }
 }

@@ -204,6 +204,94 @@ describe('API routes (messages + calls + health)', () => {
     expect(JSON.parse(leftover.body).total).toBe(0);
   });
 
+  it('POST Messages.json accepts WhatsApp and rejects a mixed channel pair', async () => {
+    const ok = await app.inject({
+      method: 'POST',
+      url: '/2010-04-01/Accounts/ACr/Messages.json',
+      headers: { 'content-type': 'application/x-www-form-urlencoded' },
+      payload: new URLSearchParams({
+        From: 'whatsapp:+15551234567',
+        To: 'WhatsApp:+15559876543',
+        Body: 'wa hello',
+      }).toString(),
+    });
+    expect(ok.statusCode).toBe(201);
+    const created = JSON.parse(ok.body);
+    expect(created.from).toBe('whatsapp:+15551234567');
+    expect(created.to).toBe('whatsapp:+15559876543');
+    expect(created.direction).toBe('outbound-api');
+
+    const mixed = await app.inject({
+      method: 'POST',
+      url: '/2010-04-01/Accounts/ACr/Messages.json',
+      headers: { 'content-type': 'application/x-www-form-urlencoded' },
+      payload: new URLSearchParams({
+        From: '+15551234567',
+        To: 'whatsapp:+15559876543',
+        Body: 'nope',
+      }).toString(),
+    });
+    expect(mixed.statusCode).toBe(400);
+    expect(JSON.parse(mixed.body).code).toBe(21910);
+  });
+
+  it('POST Messages.json keeps WhatsApp ContentSid and ContentVariables', async () => {
+    const res = await app.inject({
+      method: 'POST',
+      url: '/2010-04-01/Accounts/ACr/Messages.json',
+      headers: { 'content-type': 'application/x-www-form-urlencoded' },
+      payload: new URLSearchParams({
+        From: 'whatsapp:+15554253191',
+        To: 'whatsapp:+16722000498',
+        ContentSid: 'HXticketcode',
+        ContentVariables: JSON.stringify({ '1': 'Night Owl', '2': '4821' }),
+      }).toString(),
+    });
+    expect(res.statusCode).toBe(201);
+    const msg = JSON.parse(res.body);
+    expect(msg.body).toBe('');
+    expect(msg.content_sid).toBe('HXticketcode');
+    expect(JSON.parse(msg.content_variables)).toEqual({ '1': 'Night Owl', '2': '4821' });
+  });
+
+  it('POST /api/messages receives an inbound WhatsApp message', async () => {
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/messages',
+      headers: { 'content-type': 'application/json' },
+      payload: {
+        From: '+15550001111',
+        To: '+15551234567',
+        Body: 'arrived on WhatsApp',
+        Channel: 'whatsapp',
+      },
+    });
+    expect(res.statusCode).toBe(201);
+    const msg = JSON.parse(res.body);
+    expect(msg.direction).toBe('inbound');
+    expect(msg.status).toBe('received');
+    expect(msg.from).toBe('whatsapp:+15550001111');
+    expect(msg.to).toBe('whatsapp:+15551234567');
+    expect(msg.body).toBe('arrived on WhatsApp');
+
+    const missing = await app.inject({
+      method: 'POST',
+      url: '/api/messages',
+      headers: { 'content-type': 'application/json' },
+      payload: { From: '+1', Channel: 'whatsapp' },
+    });
+    expect(missing.statusCode).toBe(400);
+    expect(JSON.parse(missing.body).code).toBe(21201);
+
+    const badChannel = await app.inject({
+      method: 'POST',
+      url: '/api/messages',
+      headers: { 'content-type': 'application/json' },
+      payload: { From: '+1', To: '+2', Body: 'x', Channel: 'fax' },
+    });
+    expect(badChannel.statusCode).toBe(400);
+  });
+
   it('covers not-found, lastPoll, invalid call status update', async () => {
     // message 404
     const nf = await app.inject({ method: 'GET', url: '/2010-04-01/Accounts/ACx/Messages/SMdoesnotexist.json' });

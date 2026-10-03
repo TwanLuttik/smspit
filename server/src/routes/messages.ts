@@ -1,5 +1,5 @@
 import type { FastifyInstance, FastifyRequest } from 'fastify';
-import { createMessage, listMessages, getMessage, deleteMessage, lookupMagicToError } from '../services/message.js';
+import { createMessage, listMessages, getMessage, deleteMessage, lookupMagicToError, lookupChannelPairError } from '../services/message.js';
 import type { CreateMessageInput } from '../types/index.js';
 import { broadcastNewMessage } from '../ws.js';
 
@@ -51,6 +51,18 @@ export async function messagesRoutes(fastify: FastifyInstance): Promise<void> {
         code: magicError.code,
         more_info: magicError.more_info,
       });
+    }
+
+    if (input.From) {
+      const channelError = lookupChannelPairError(input.From, input.To);
+      if (channelError) {
+        return reply.status(400).send({
+          status: 400,
+          message: channelError.message,
+          code: channelError.code,
+          more_info: channelError.more_info,
+        });
+      }
     }
 
     try {

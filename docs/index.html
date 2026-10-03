@@ -104,7 +104,9 @@ client.messages.create(to='+1...', from_='+2...', body='hi SMSPit')</code></pre>
       <h2>Internal API</h2>
       <div class="grid">
         <div class="card"><code>GET /api/messages</code> — list inbox, optional <code>?to=</code> and <code>?lastPoll=</code></div>
+        <div class="card"><code>POST /api/messages</code> — receive inbound SMS or WhatsApp (<code>Channel=whatsapp</code>)</div>
         <div class="card"><code>DELETE /api/messages</code> — purge inbox, returns <code>{ deleted }</code></div>
+        <div class="card">WhatsApp addresses use <code>whatsapp:+E.164</code> on both From and To. Mixed channels return <code>21910</code>.</div>
         <div class="card"><code>GET /health</code> — liveness for compose healthchecks</div>
         <div class="card">Magic To <code>+12025550001</code> → 21211, <code>+12025550009</code> → 21614</div>
       </div>

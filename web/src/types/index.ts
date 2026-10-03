@@ -25,6 +25,9 @@ export interface TwilioMessage {
   error_code: number | null;
   error_message: string | null;
   direction: MessageDirection;
+  content_sid?: string | null;
+  content_variables?: string | null;
+  media_url?: string | null;
   date_created: string;
   date_sent: string | null;
 }

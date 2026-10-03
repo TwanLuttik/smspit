@@ -13,6 +13,9 @@ export interface TwilioMessage {
   price: number | null;
   price_unit: string | null;
   messaging_service_sid: string | null;
+  content_sid: string | null;
+  content_variables: string | null;
+  media_url: string | null;
   date_created: string;
   date_sent: string | null;
   date_updated: string;
@@ -45,6 +48,7 @@ export interface CreateMessageInput {
   MediaUrl?: string;
   ContentSid?: string;
   MessagingServiceSid?: string;
+  ContentVariables?: string;
   StatusCallback?: string;
   ApplicationSid?: string;
   ValidityPeriod?: number;
@@ -70,6 +74,9 @@ export interface MessageRow {
   price: number | null;
   price_unit: string | null;
   messaging_service_sid: string | null;
+  content_sid: string | null;
+  content_variables: string | null;
+  media_url: string | null;
   created_at: string;
   sent_at: string | null;
   updated_at: string;
